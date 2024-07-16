@@ -26,10 +26,13 @@ class TypeSubscriptionView(discord.ui.View):
             )
         ]
     )
-    # @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="😎")
     async def select_callback(self, select: discord.ui.Select,
-                              interaction: discord.Interaction):  # the function called when the user is done selecting options
+                              interaction: discord.Interaction):
         if interaction.user.id == self.author_id:
+            select.disabled = True
+            # await interaction.edit(view=self)
+            mes = await interaction.original_message()
+            await mes.edit(view=self)
             if select.values[0] == 'team':
                 await interaction.response.send_modal(InputTeamModal())
             elif select.values[0] == 'branch':
@@ -44,8 +47,7 @@ class InputTeamModal(discord.ui.Modal):
         self.add_item(discord.ui.InputText(label="Введите название тайтла"))
 
     async def callback(self, interaction: discord.Interaction):
-        pass
-        # await interaction.respond(f'{self.children[0].value}\n{self.children[1].value}')
+        await interaction.respond(f'{self.children[0].value}\n{self.children[1].value}')
 
     # embed = discord.Embed(title="Modal Results")
     # embed.add_field(name="Short Input 2", value=self.children[0].value)
