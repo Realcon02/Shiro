@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands, bridge
+from discord.ext import commands
 
 
 class Template(commands.Cog):
@@ -7,15 +7,16 @@ class Template(commands.Cog):
         self.bot = bot
 
     @commands.command(name='test-prefix')
-    async def test_prefix(self, ctx: bridge.context.BridgeExtContext):
+    async def test_prefix(self, ctx: commands.Context):
         await ctx.reply("Успешный тест!")
         await ctx.send(type(ctx))
 
     @commands.slash_command(name="test-slash")
-    async def test_slash(self, ctx: bridge.context.BridgeApplicationContext):
+    async def test_slash(self, ctx: discord.ApplicationContext):
         await ctx.respond("Успешный тест!")
         await ctx.send(type(ctx))
 
+    '''
     @bridge.bridge_command(name='test-bridge')
     async def test_bridge(self, ctx: bridge.context.BridgeApplicationContext):
         """
@@ -26,6 +27,7 @@ class Template(commands.Cog):
         """
         await ctx.respond("Успешный тест!")
         await ctx.send(type(ctx))
+    '''
 
 
 def setup(bot) -> None:

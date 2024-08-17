@@ -9,19 +9,19 @@ class Subscription(commands.Cog):
     subscription = discord.SlashCommandGroup(name='sub')
 
     @subscription.command(name='help')
-    async def help_subscription(self):
+    async def help_subscription(self, ctx: discord.ApplicationContext):
         pass
 
     @subscription.command(name='add')
-    async def add_subscription(self):
+    async def add_subscription(self, ctx: discord.ApplicationContext):
         pass
 
     @subscription.command(name='delete')
-    async def delete_subscription(self):
+    async def delete_subscription(self, ctx: discord.ApplicationContext):
         pass
 
     @subscription.command(name='list')
-    async def list_subscription(self):
+    async def list_subscription(self, ctx: discord.ApplicationContext):
         pass
 
 

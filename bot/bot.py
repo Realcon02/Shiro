@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands, bridge
+from discord.ext import commands
 import os  # default module
 from dotenv import load_dotenv
 
@@ -15,7 +15,7 @@ import config
 '''
 
 
-class Shiro(bridge.Bot):
+class Shiro(commands.Bot):
     def __init__(self):
         intents = discord.Intents.all()
         super().__init__(

@@ -1,6 +1,6 @@
 import discord
 from random import randint
-from discord.ext import commands, bridge
+from discord.ext import commands
 
 
 class Info(commands.Cog):
@@ -23,7 +23,7 @@ class Info(commands.Cog):
     info = discord.SlashCommandGroup(name='info')
 
     @info.command(name='avatar')
-    async def view_avatar(self, ctx: bridge.context.BridgeApplicationContext, member: discord.Member):
+    async def view_avatar(self, ctx: discord.ApplicationContext, member: discord.Member):
         user = member.name
         image = member.avatar.url
 
@@ -35,7 +35,7 @@ class Info(commands.Cog):
         await ctx.respond(embed=embed)
 
     @info.command(name='banner')
-    async def view_banner(self, ctx: bridge.context.BridgeApplicationContext, member: discord.Member):
+    async def view_banner(self, ctx: discord.ApplicationContext, member: discord.Member):
         user = member.name
         image = (await self.bot.fetch_user(member.id)).banner or self._list_images[
             randint(0, len(self._list_images) - 1)]
