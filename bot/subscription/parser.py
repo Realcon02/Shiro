@@ -1,6 +1,10 @@
+from typing import List
+
 import requests
 from urllib.parse import quote
 import os
+
+from discord import OptionChoice
 
 
 class Chapter:
@@ -10,6 +14,18 @@ class Chapter:
         self.title = title
         self.added = added
         self.manga_id = manga_id
+
+
+def search_title(site_id: int, title_name: str) -> list[OptionChoice]:
+    data = requests.get(
+        f"https://api.lib.social/api/manga?fields[]=rate_avg&fields[]=rate&fields[]=releaseDate&q={quote(title_name)}&site_id[]={site_id}"
+    ).json()['data']
+    print(len(data))
+    total = []
+    for title in data:
+        total.append(OptionChoice(title['rus_name'] or title['name'], title['id']))
+    print(total)
+    return total
 
 
 def search_team(team_name: str) -> dict:
@@ -29,8 +45,8 @@ def search_team(team_name: str) -> dict:
 
 def search_title_by_team(team_id: int, title_name: str) -> dict:
     search_title = requests.get(
-        f"https://api.lib.social/api/manga?fields[]=rate_avg&fields[]=rate&fields[]=releaseDate&q={quote(title_name)}&site_id[]=3").json()[
-        'data'][0]
+        f"https://api.lib.social/api/manga?fields[]=rate_avg&fields[]=rate&fields[]=releaseDate&q={quote(title_name)}&site_id[]=3"
+    ).json()['data'][0]
     titles = requests.get(
         f"https://api.lib.social/api/manga?fields[]=rate&fields[]=rate_avg&fields[]=userBookmark&site_id[]=3&target_id={team_id}&target_model=team").json()[
         'data']
