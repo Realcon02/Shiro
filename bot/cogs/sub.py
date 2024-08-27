@@ -3,27 +3,7 @@ from discord.ext import commands
 from discord import Option, SlashCommandOptionType, OptionChoice
 from discord.utils import basic_autocomplete as bas_auto
 
-from ..subscription.parser import search_title  # , search_team, search_branch
-
-
-# AutoComplete
-
-async def get_titles_auto(ctx: discord.AutocompleteContext):
-    site = ctx.options['site']
-    title = ctx.options['title']
-    return search_title(site, title)
-
-'''
-async def get_team_or_branch_auto(ctx: discord.AutocompleteContext):
-    type_sub = ctx.options['type_sub']
-    title = ctx.options['title']
-
-    id_title = search_title(title)
-    if type_sub == 'Team':
-        return search_team(id_title)
-    else:  # Branch
-        return search_branch(id_title)
-'''
+from ..subscription.adding import get_titles_auto, get_team_or_branch_auto
 
 
 class Subscription(commands.Cog):
@@ -40,14 +20,14 @@ class Subscription(commands.Cog):
     @discord.option('channel', input_type=SlashCommandOptionType.channel)
     @discord.option('site', input_type=int, choices=[OptionChoice('RanobeLIB', 3), OptionChoice('MangaLIB', 1)])
     @discord.option('type_sub', input_type=str, choices=['Team', 'Branch'])
-    @discord.option('title', input_type=int, autocomplete=get_titles_auto)
-    @discord.option('team_or_branch', input_type=str)  # , autocomplete=bas_auto(get_team_or_branch_auto)
+    @discord.option('title', input_type=str, autocomplete=get_titles_auto)
+    @discord.option('team_or_branch', input_type=str, autocomplete=get_team_or_branch_auto)
     async def add_sub(self,
                       ctx: discord.ApplicationContext,
                       channel: discord.TextChannel,
                       site: int,
                       type_sub: str,
-                      title: int,
+                      title: str,
                       team_or_branch: str
                       ):
         await ctx.respond(f'{channel.mention}\n{site}\n{type_sub}\n{title}\n{team_or_branch}')
