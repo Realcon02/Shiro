@@ -1,5 +1,3 @@
-from typing import List
-
 import requests
 from urllib.parse import quote
 import os
@@ -17,33 +15,33 @@ class Chapter:
 
 
 def search_title(site_id: int, title_name: str) -> list[OptionChoice]:
-    data = requests.get(
+    titles = requests.get(
         f"https://api.lib.social/api/manga?fields[]=rate_avg&fields[]=rate&fields[]=releaseDate&q={quote(title_name)}&site_id[]={site_id}"
     ).json()['data']
-    print(len(data))
     total = []
-    for title in data:
-        total.append(OptionChoice(title['rus_name'] or title['name'], title['id']))
-    print(total)
+    for title in titles:
+        total.append(OptionChoice(title['rus_name'] or title['name'], title['slug_url']))
     return total
 
 
-def search_team(team_name: str) -> dict:
-    data = requests.get(f"https://api.lib.social/api/teams?q={quote(team_name)}").json()['data'][0]
-    if data:
-        id = data['id']
-        name = data['name']
-        avatar_url = f'https://ranobelib.me{data['cover']['default']}'
-        output = {
-            "id": id,
-            "name": name,
-            "avatar_url": avatar_url
-        }
-        return output
-    return {}
+def search_teams_of_title(slug_url_title: str) -> list[OptionChoice]:
+    teams = requests.get(f"https://api.lib.social/api/manga/{slug_url_title}?fields[]=teams").json()['data']['teams']
+    total = []
+    for team in teams:
+        total.append(OptionChoice(team['name'], team['slug_url']))
+    return total
 
 
-def search_title_by_team(team_id: int, title_name: str) -> dict:
+def search_branches_of_title(slug_url_title: str) -> list[OptionChoice]:
+    id_title = slug_url_title.split('--', 1)[0]
+    branches = requests.get(f"https://api.lib.social/api/branches/{id_title}").json()['data']
+    total = []
+    for branch in branches:
+        total.append(OptionChoice(branch['teams'][0]['name']))
+    return total
+
+
+'''def search_title_by_team(team_id: int, title_name: str) -> dict:
     search_title = requests.get(
         f"https://api.lib.social/api/manga?fields[]=rate_avg&fields[]=rate&fields[]=releaseDate&q={quote(title_name)}&site_id[]=3"
     ).json()['data'][0]
@@ -61,7 +59,7 @@ def search_title_by_team(team_id: int, title_name: str) -> dict:
                 "avatar_url": avatar_url
             }
             return output
-    return {}
+    return {}'''
 
 
 def create_subscription(team_id: int, title_id: int):
