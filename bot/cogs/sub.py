@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
-from discord import Option, SlashCommandOptionType, OptionChoice
-from discord.utils import basic_autocomplete as bas_auto
+from discord import OptionChoice, ChannelType
 
 from ..subscription.adding import get_titles_auto, get_team_or_branch_auto
 
@@ -17,7 +16,7 @@ class Subscription(commands.Cog):
         pass
 
     @subscription.command(name='add')
-    @discord.option('channel', input_type=SlashCommandOptionType.channel)
+    @discord.option('channel', channel_types=[ChannelType.text])
     @discord.option('site', input_type=int, choices=[OptionChoice('RanobeLIB', 3), OptionChoice('MangaLIB', 1)])
     @discord.option('type_sub', input_type=str, choices=['Team', 'Branch'])
     @discord.option('title', input_type=str, autocomplete=get_titles_auto)
