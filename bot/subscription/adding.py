@@ -8,7 +8,7 @@ from ..subscription.parser import search_title, search_teams_of_title, search_br
 # AutoComplete
 async def get_titles_auto(ctx: AutocompleteContext):
     site = ctx.options['site']
-    title = ctx.options['title']
+    title = ctx.value
     return search_title(site, title)
 
 
