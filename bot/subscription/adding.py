@@ -20,3 +20,7 @@ async def get_team_or_branch_auto(ctx: AutocompleteContext):
         return search_teams_of_title(slug_url_title)
     else:  # Branch
         return search_branches_of_title(slug_url_title)
+
+
+def sub_add_team(last_chapter_id: int):
+    print(last_chapter_id)

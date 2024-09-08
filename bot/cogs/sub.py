@@ -2,7 +2,8 @@ import discord
 from discord.ext import commands
 from discord import OptionChoice, ChannelType
 
-from ..subscription.adding import get_titles_auto, get_team_or_branch_auto
+from ..subscription.adding import get_titles_auto, get_team_or_branch_auto, sub_add_team
+from ..subscription.parser import search_last_chapter
 
 
 class Subscription(commands.Cog):
@@ -27,9 +28,12 @@ class Subscription(commands.Cog):
                       site: int,
                       type_sub: str,
                       title: str,
-                      team_or_branch: str
+                      team_or_branch: int
                       ):
-        await ctx.respond(f'{channel.mention}\n{site}\n{type_sub}\n{title}\n{team_or_branch}')
+        if type_sub == 'Team':
+            last_chapter_id = search_last_chapter(title, team_or_branch)
+            sub_add_team(last_chapter_id)
+            await ctx.respond(f'{channel.mention}\n{site}\n{type_sub}\n{title}\n{team_or_branch}\n\n{last_chapter_id}')
 
     @subscription.command(name='delete')
     async def delete_sub(self, ctx: discord.ApplicationContext):
