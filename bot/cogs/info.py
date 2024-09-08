@@ -1,5 +1,5 @@
 import discord
-from random import randint
+from random import choice
 from discord.ext import commands
 
 
@@ -37,8 +37,7 @@ class Info(commands.Cog):
     @info.command(name='banner')
     async def view_banner(self, ctx: discord.ApplicationContext, member: discord.Member):
         user = member.name
-        image = (await self.bot.fetch_user(member.id)).banner or self._list_images[
-            randint(0, len(self._list_images) - 1)]
+        image = (await self.bot.fetch_user(member.id)).banner or choice(self._list_images)
 
         embed = discord.Embed(
             title=f'Баннер {user}' if image not in self._list_images else f'У {user} нет баннера'
