@@ -20,7 +20,7 @@ class Subscription(commands.Cog):
     @discord.option('site', input_type=int, choices=[OptionChoice('RanobeLIB', 3), OptionChoice('MangaLIB', 1)])
     @discord.option('type_sub', input_type=str, choices=['Team', 'Branch'])
     @discord.option('title', input_type=str, autocomplete=get_titles_auto)
-    @discord.option('team_or_branch', input_type=str, autocomplete=get_team_or_branch_auto)
+    @discord.option('team_or_branch', input_type=int, autocomplete=get_team_or_branch_auto)
     async def add_sub(self,
                       ctx: discord.ApplicationContext,
                       channel: discord.TextChannel,

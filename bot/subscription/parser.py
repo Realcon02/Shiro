@@ -36,8 +36,10 @@ def search_branches_of_title(slug_url_title: str) -> list[OptionChoice]:
     id_title = slug_url_title.split('--', 1)[0]
     branches = requests.get(f"https://api.lib.social/api/branches/{id_title}").json()['data']
     total = []
+    if not branches:
+        return [OptionChoice('Нет веток', -1)]
     for branch in branches:
-        total.append(OptionChoice(branch['teams'][0]['name']))
+        total.append(OptionChoice(branch['teams'][0]['name'], branch['id']))
     return total
 
 
