@@ -6,7 +6,7 @@ class General(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
 
-    @commands.slash_command(name='ping')
+    @commands.slash_command(name='ping', description="Отправляет данные о задержке бота")
     async def ping(self, ctx: discord.ApplicationContext):
         await ctx.respond(f'Pong! {round(ctx.bot.latency * 1000)}ms')
         # await ctx.channel.send(type(ctx))
