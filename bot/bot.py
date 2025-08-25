@@ -1,8 +1,9 @@
 import discord
 from discord.ext import commands
-import os  # default module
+import os
 from dotenv import load_dotenv
 
+from .utils import DatabaseManager
 import config
 
 '''
@@ -17,6 +18,7 @@ import config
 
 class Shiro(commands.Bot):
     def __init__(self):
+
         intents = discord.Intents.all()
         super().__init__(
             command_prefix=commands.when_mentioned_or(*config.prefixes),
@@ -26,7 +28,21 @@ class Shiro(commands.Bot):
         load_dotenv()
         self._TOKEN = os.getenv('TOKEN')
 
-    def setup(self):
+        db_params = {
+            'host': os.getenv('DB_HOST'),
+            'port': os.getenv('DB_PORT'),
+            'database': os.getenv('DB_NAME'),
+            'user': os.getenv('DB_USER'),
+            'password': os.getenv('DB_PASSWORD')
+        }
+        self._DB_PARAMS = db_params
+        self.db = None
+
+    async def setup(self):
+        db_manager = DatabaseManager()
+        await db_manager.initialize(self._DB_PARAMS)
+        self.db = db_manager
+
         for file in os.listdir(f'{os.path.realpath(os.path.dirname(__file__))}/cogs'):
             if file.endswith('.py'):
                 extension = file[:-3]
@@ -39,9 +55,14 @@ class Shiro(commands.Bot):
                         f"Failed to load extension '{extension}'\n{exception}"
                     )
 
-    def run(self):
-        print('Running Bot')
-        super().run(self._TOKEN)
+    async def start(self):
+        print('Running bot...')
+        await super().start(self._TOKEN)
+
+    async def close(self):
+        if self.db:
+            await self.db.close()
+        await super().close()
 
     async def on_ready(self):
         print(f"{self.user.name} готова!")
