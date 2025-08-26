@@ -8,8 +8,8 @@ from bot import Shiro
 
 async def main():
     bot = Shiro()
-    await bot.setup()
     try:
+        await bot.setup()
         await bot.start()
     finally:
         print("Cleaning up resources...")
