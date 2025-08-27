@@ -8,12 +8,14 @@ class DatabaseManager:
         self.pool: asyncpg.Pool | None = None
 
     async def initialize(self, db_params):
+        """Создание пула соединений"""
         self.pool = await asyncpg.create_pool(
             min_size=1, max_size=8, **db_params
         )
         print('[INFO] Database pool initialized')
 
     async def close(self):
+        """Закрытие пула соединений"""
         if self.pool:
             await self.pool.close()
             self.pool = None
