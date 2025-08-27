@@ -3,7 +3,7 @@ from discord.ext import commands
 import os
 from dotenv import load_dotenv
 
-from .utils import DatabaseManager
+from .services import DatabaseManager, LibAPI
 import config
 
 '''
@@ -18,7 +18,6 @@ import config
 
 class Shiro(commands.Bot):
     def __init__(self):
-
         intents = discord.Intents.all()
         super().__init__(
             command_prefix=commands.when_mentioned_or(*config.prefixes),
@@ -36,12 +35,15 @@ class Shiro(commands.Bot):
             'password': os.getenv('DB_PASSWORD')
         }
         self._DB_PARAMS = db_params
-        self.db = None
+        self.db: DatabaseManager | None = None
+        self.lib_api: LibAPI | None = None
 
     async def setup(self):
-        db_manager = DatabaseManager()
-        await db_manager.initialize(self._DB_PARAMS)
-        self.db = db_manager
+        self.db = DatabaseManager()
+        await self.db.initialize(self._DB_PARAMS)
+
+        self.lib_api = LibAPI()
+        await self.lib_api.initialize()
 
         for file in os.listdir(f'{os.path.realpath(os.path.dirname(__file__))}/cogs'):
             if file.endswith('.py'):
@@ -62,7 +64,9 @@ class Shiro(commands.Bot):
     async def close(self):
         if self.db:
             await self.db.close()
+        if self.lib_api:
+            await self.lib_api.close()
         await super().close()
 
     async def on_ready(self):
-        print(f"{self.user.name} готова!")
+        print(f"{self.user.name} is ready!")
