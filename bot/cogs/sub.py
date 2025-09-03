@@ -18,7 +18,9 @@ class Subscription(commands.Cog):
         site = ctx.options.get('site') or 3
         title = ctx.value
 
-        return await self.lib_api.search_title(site, title)
+        if not title:
+            return []
+        return await self.lib_api.search_work(site, title)
 
     @staticmethod
     async def get_suitable_channels(ctx: AutocompleteContext):
@@ -54,20 +56,40 @@ class Subscription(commands.Cog):
             choices=_site_options)
     @option(name='work',
             description='Поиск произведения',
-            input_type=int,
+            input_type=str,
             autocomplete=get_works_auto)
     @option(name='channel',
             description='Выберите текстовый канал, в котором у бота есть необходимые права для отправки уведомлений',
-            input_type=discord.TextChannel,
+            input_type=TextChannel,
             autocomplete=get_suitable_channels)
     async def add_of_work(self,
                           ctx: discord.ApplicationContext,
                           site: int,
-                          work: int,
-                          channel: discord.TextChannel):
-        await ctx.respond(f'site: {site}\n'
-                          f'work: {work}\n'
-                          f'channel: {channel}')
+                          work: str,
+                          channel: TextChannel):
+        id_work, slug_url_work = await self.lib_api.search_id_and_slug_url_work(site, work)
+
+        sub_id = await self.db.get_sub_id('works', id_work)
+        if not sub_id:
+            newest_id_work = await self.lib_api.search_newest_id_chapter_work(slug_url_work)
+            await self.db.add_work(id_work, slug_url_work)
+
+            sub_id = await self.db.create_sub('works', id_work, newest_id_work)
+            print(f"Created new subscription with ID: {sub_id}")
+
+        if not await self.db.check_sub_guild_exists(sub_id, ctx.guild.id):
+            await self.db.add_sub_to_guild(sub_id, ctx.guild.id, channel.id)
+            await ctx.respond('Подписка успешно создана!')
+        else:
+            await ctx.respond('Данная подписка уже есть на этом сервере')
+
+        # await ctx.send(f'> Информация:\n'
+        #                f'Сайт: {site}\n'
+        #                f'Произведение: {work}\n'
+        #                f'Канал: {channel.mention}\n'
+        #                f'ID работы: {id_work}\n'
+        #                f'URL слаг: {slug_url_work}\n'
+        #                f'ID подписки: {sub_id}')
 
     # @subscription.command(name='add')
     # @option('channel', channel_types=[ChannelType.text])

@@ -1,10 +1,14 @@
 import discord
 from discord.ext import commands
 
+from bot import Shiro
+from bot.services import LibAPI
+
 
 class Template(commands.Cog):
-    def __init__(self, bot) -> None:
+    def __init__(self, bot: Shiro) -> None:
         self.bot = bot
+        self.lib_api: LibAPI = bot.lib_api
 
     @commands.command(name='test-prefix')
     async def test_prefix(self, ctx: commands.Context):
@@ -13,8 +17,12 @@ class Template(commands.Cog):
 
     @commands.slash_command(name="test-slash")
     async def test_slash(self, ctx: discord.ApplicationContext):
+        # await ctx.send(f'{await self.lib_api.search_work(1, 'f')}')
+        # for channel in commands.Bot.get_all_channels():
+        #     print(channel.name)
+        #     for permission in channel.permissions_for():
+        #         print(permission)
         await ctx.respond("Успешный тест!")
-        await ctx.send(type(ctx))
 
     '''
     @bridge.bridge_command(name='test-bridge')
