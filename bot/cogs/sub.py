@@ -15,12 +15,13 @@ class Subscription(commands.Cog):
     # Автозаполнения
     async def get_works_auto(self, ctx: AutocompleteContext):
         """Автозаполнение для поиска произведений"""
+
         site = ctx.options.get('site') or 3
         title = ctx.value
 
         if not title:
             return []
-        return await self.lib_api.search_work(site, title)
+        return await self.lib_api.search_works(site, title)
 
     @staticmethod
     async def get_suitable_channels(ctx: AutocompleteContext):
@@ -29,6 +30,7 @@ class Subscription(commands.Cog):
 
         НЕ ДОДЕЛАНА
         """
+
         channels = []
         for channel in ctx.bot.get_all_channels():
             if isinstance(channel, TextChannel):
@@ -67,14 +69,14 @@ class Subscription(commands.Cog):
                           site: int,
                           work: str,
                           channel: TextChannel):
-        id_work, slug_url_work = await self.lib_api.search_id_and_slug_url_work(site, work)
+        work_info = await self.lib_api.search_work(site, work.rstrip('...'))
 
-        sub_id = await self.db.get_sub_id('works', id_work)
+        sub_id = await self.db.get_sub_id('works', work_info['id'])
         if not sub_id:
-            newest_id_work = await self.lib_api.search_newest_id_chapter_work(slug_url_work)
-            await self.db.add_work(id_work, slug_url_work)
+            newest_id_work = await self.lib_api.search_newest_id_chapter_work(work_info['slug_url'])
+            await self.db.add_work(work_info)
 
-            sub_id = await self.db.create_sub('works', id_work, newest_id_work)
+            sub_id = await self.db.create_sub('works', work_info['id'], newest_id_work)
             print(f"Created new subscription with ID: {sub_id}")
 
         if not await self.db.check_sub_guild_exists(sub_id, ctx.guild.id):
