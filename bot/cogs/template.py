@@ -17,6 +17,11 @@ class Template(commands.Cog):
 
     @commands.slash_command(name="test-slash")
     async def test_slash(self, ctx: discord.ApplicationContext):
+        # await ctx.send(f'{await self.lib_api.search_work(1, 'f')}')
+        # for channel in commands.Bot.get_all_channels():
+        #     print(channel.name)
+        #     for permission in channel.permissions_for():
+        #         print(permission)
         await ctx.respond("Успешный тест!")
 
     '''
