@@ -13,7 +13,6 @@ class Template(commands.Cog):
     @commands.command(name='test-prefix')
     async def test_prefix(self, ctx: commands.Context):
         await ctx.reply("Успешный тест!")
-        await ctx.send(type(ctx))
 
     @commands.slash_command(name="test-slash")
     async def test_slash(self, ctx: discord.ApplicationContext):
