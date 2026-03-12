@@ -88,7 +88,7 @@ class DatabaseManager:
                 await conn.execute("""
                     INSERT INTO
                     works(work_id, name, rus_name, slug_url)
-                    VALUES ($1, $2)
+                    VALUES ($1, $2, $3, $4)
                     ON CONFLICT (work_id) DO NOTHING""",
                     work_id, name, rus_name, slug_url
                 )
