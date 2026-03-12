@@ -57,9 +57,9 @@ class Shiro(commands.Bot):
                         f"Failed to load extension '{extension}'\n{exception}"
                     )
 
-    async def start(self):
+    async def start(self, **kwargs):
         print('Running bot...')
-        await super().start(self._TOKEN)
+        await super().start(self._TOKEN, **kwargs)
 
     async def close(self):
         if self.db:
