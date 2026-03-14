@@ -1,6 +1,6 @@
 import discord
-from discord.ext import commands
 from discord import AutocompleteContext, TextChannel, OptionChoice, option
+from discord.ext import commands
 
 from bot import Shiro
 from bot.services import DatabaseManager, LibAPI

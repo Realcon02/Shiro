@@ -21,7 +21,6 @@ class DatabaseManager:
             self.pool = None
             print('[INFO] Database pool closed')
 
-
     # Операции с подписками
     async def create_sub(self, target_type: str, target_id: int, newest_id_chapter: int) -> int:
         """Создание подписки"""
@@ -34,8 +33,8 @@ class DatabaseManager:
                     subscriptions(target_type, target_id, newest_id_chapter)
                     VALUES ($1, $2, $3)
                     RETURNING id""",
-                    target_type, target_id, newest_id_chapter
-                )
+                                           target_type, target_id, newest_id_chapter
+                                           )
 
     async def add_sub_to_guild(self, sub_id: int, guild_id: int, channel_id: int):
         """Добавление подписки на сервер"""
@@ -48,8 +47,8 @@ class DatabaseManager:
                     subscriptions_guilds(subscription_id, guild_id, channel_id)
                     VALUES ($1, $2, $3)
                     ON CONFLICT (subscription_id, guild_id) DO NOTHING""",
-                    sub_id, guild_id, channel_id
-                )
+                                   sub_id, guild_id, channel_id
+                                   )
 
     async def update_sub(self, sub_id: int, newest_chapter_id: int):
         """Обновление подписки, т.е. обновление ID новейшей главы"""
@@ -72,9 +71,8 @@ class DatabaseManager:
                 SELECT EXISTS
                 (SELECT 1 FROM subscriptions_guilds
                 WHERE subscription_id = $1 AND guild_id = $2)""",
-                sub_id, guild_id
-            )
-
+                                       sub_id, guild_id
+                                       )
 
     # Операции с метаданными
     async def add_work(self, work_info: dict) -> None:
@@ -90,9 +88,8 @@ class DatabaseManager:
                     works(work_id, name, rus_name, slug_url)
                     VALUES ($1, $2, $3, $4)
                     ON CONFLICT (work_id) DO NOTHING""",
-                    work_id, name, rus_name, slug_url
-                )
-
+                                   work_id, name, rus_name, slug_url
+                                   )
 
     # Операции чтения
     async def get_all_subscriptions(self) -> list[Record]:
@@ -112,8 +109,8 @@ class DatabaseManager:
             return await conn.fetchval("""
                 SELECT id FROM subscriptions
                 WHERE target_type = $1 AND target_id = $2""",
-                target_type, target_id
-            )
+                                       target_type, target_id
+                                       )
 
     async def get_work_info(self, target_id: int) -> Record:
         """Получение информации о произведении"""
@@ -123,8 +120,8 @@ class DatabaseManager:
             return await conn.fetchrow("""
                 SELECT name, rus_name, slug_url FROM works
                 WHERE work_id = $1""",
-                target_id
-            )
+                                       target_id
+                                       )
 
     async def get_guilds_for_sub(self, sub_id: int) -> list[Record]:
         """Возвращает список серверов, имеющих данную подписку"""
@@ -135,4 +132,3 @@ class DatabaseManager:
                 SELECT guild_id, channel_id FROM subscriptions_guilds
                 WHERE subscription_id = $1
             """, sub_id)
-

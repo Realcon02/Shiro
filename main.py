@@ -1,5 +1,7 @@
 import asyncio
+
 from bot import Shiro
+
 
 # logging.basicConfig(
 #     level = logging.INFO, filename="bot.log",
@@ -14,6 +16,7 @@ async def main():
     finally:
         print("Cleaning up resources...")
         await bot.close()
+
 
 if __name__ == "__main__":
     try:

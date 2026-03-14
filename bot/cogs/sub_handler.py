@@ -1,19 +1,17 @@
+import asyncio
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
+
 import discord
 from discord.ext import commands, tasks
-
-from datetime import datetime, timedelta
-import asyncio
 
 from bot import Shiro
 from bot.services import DatabaseManager, LibAPI
 from config import interval_checking_new_chapters
 
-from typing import TYPE_CHECKING
-
 # Импорт только для проверки типов (не выполняется при запуске)
 if TYPE_CHECKING:
     from asyncpg import Record
-
 
 
 class SubHandler(commands.Cog):
@@ -28,7 +26,6 @@ class SubHandler(commands.Cog):
 
     def cog_unload(self) -> None:
         self.check_new_chapters_loop.cancel()
-
 
     # Логика цикла
     @tasks.loop(minutes=interval_checking_new_chapters)
@@ -45,7 +42,6 @@ class SubHandler(commands.Cog):
         next_minute = now.replace(second=0, microsecond=0) + timedelta(minutes=1)
         sleep_time = (next_minute - now).total_seconds()
         await asyncio.sleep(sleep_time)
-
 
     # Главные обрабатывающие функции
     async def check_new_chapters(self):

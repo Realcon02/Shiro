@@ -1,10 +1,9 @@
+import os
+
 import discord
-from discord import Interaction
+from dotenv import load_dotenv
 
 from config import embed_color, timeout_command
-
-from dotenv import load_dotenv
-import os
 
 bot = discord.Bot()
 

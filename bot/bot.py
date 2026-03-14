@@ -1,10 +1,11 @@
+import os
+
 import discord
 from discord.ext import commands
-import os
 from dotenv import load_dotenv
 
-from .services import DatabaseManager, LibAPI
 import config
+from .services import DatabaseManager, LibAPI
 
 '''
 Есть три разновидности ботов:

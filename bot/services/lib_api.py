@@ -24,7 +24,6 @@ class LibAPI:
             self.session = None
             print('[INFO] Session closed')
 
-
     # Функции поиска
     async def search_works(self, site_id: int, searched_work: str) -> list[str]:
         url = 'manga'
@@ -80,7 +79,6 @@ class LibAPI:
 
         return work_info
 
-
     # Функции извлечения информации
     async def get_chapter_info(self, slug_url_work, chapter_id) -> dict:
         """Возвращает том, номер и название запрошенной главы"""
@@ -88,7 +86,7 @@ class LibAPI:
         chapter_info = {
             'volume': '',
             'number': '',
-            'name'  : ''
+            'name': ''
         }
         branch_id: int
 
@@ -126,7 +124,7 @@ class LibAPI:
 
             for chapter in chapters:
                 for branch in chapter['branches']:
-                    if (chapter_id:=branch['id']) > old_chapter_id:
+                    if (chapter_id := branch['id']) > old_chapter_id:
                         new_ids.append(chapter_id)
 
         return new_ids
