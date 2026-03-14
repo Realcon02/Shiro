@@ -69,13 +69,15 @@ class SubHandler(commands.Cog):
         # Вопрос:
         # Стоит ли создавать 2 функции, одна из которых получает slug_url для поиска newest_id_chapter,
         # а вторая в случае нахождения более нового id забирает name и rus_name
-        # ПРОБЛЕМА В ТОМ, ЧТО ПРИДЁТСЯ ГОРОДИТЬ ДВА ОДИНАКОВЫХ match. ТИПА ЭТО БУДЕТ ВЫГЛЯДЕТЬ НАГРОМОЖДЁННО.
         # Проблема в том, что придётся городить 2 ОДИНАКОВЫХ match. Типа это будет выглядеть нагромождённо, некрасиво.
         # Ну либо вложить if в match, из-за чего if'ов станет АЖ 4 ОДИНАКОВЫХ
 
         # Мнение:
         # Мне так-то похуй, больше или меньше инфы из БД за раз запрашивать будут,
         # если это практически неразличимо в плане производительности
+
+        print(f'Начинаю проверку подписки:\n'
+              f'({sub['id']}, {sub['target_type']}, {sub['target_id']}, {sub['newest_id_chapter']}, {sub['created_at']})')
 
         try:
             newest_chapter_id: int | None = None
@@ -98,6 +100,8 @@ class SubHandler(commands.Cog):
                     pass
 
             if newest_chapter_id and newest_chapter_id > (old_chapter_id := sub['newest_id_chapter']):
+                print(f'Обнаружена глава с более новым id: {newest_chapter_id}')
+
                 # Получаем сервера с этой подпиской
                 guild_subs = await self.db.get_guilds_for_sub(sub['id'])
 
@@ -121,6 +125,9 @@ class SubHandler(commands.Cog):
                 # Обновляем ID последней главы в БД
                 await self.db.update_sub(sub['id'], newest_chapter_id)
 
+            else:
+                print('Новых глав не обнаружено')
+
         except Exception as e:
             print(f"Error processing subscription {sub['id']}:\n{type(e).__name__}: {e}")
 
@@ -142,6 +149,10 @@ class SubHandler(commands.Cog):
                 embed.set_footer(text="Приятного чтения!")
 
                 await channel.send(embed=embed)
+
+                print(f'Было отправлено уведомление на:\n'
+                      f'  Сервер: {guild_sub['guild_id']}\n'
+                      f'  Канал:  {guild_sub['channel_id']}')
 
         except Exception as e:
             print(f"Error sending a notification to the channel {guild_sub['channel_id']}:\n{type(e).__name__}: {e}")
