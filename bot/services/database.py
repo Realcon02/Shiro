@@ -9,7 +9,7 @@ class DatabaseManager:
 
     async def initialize(self, db_params):
         """Создание пула соединений"""
-        self.pool = create_pool(
+        self.pool = await create_pool(
             min_size=1, max_size=8, **db_params
         )
         print('[INFO] Database pool initialized')
