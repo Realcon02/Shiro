@@ -1,4 +1,3 @@
-import aiohttp
 from aiohttp import ClientSession
 
 
@@ -7,11 +6,15 @@ class LibAPI:
 
     def __init__(self):
         self.base_url = 'https://api.cdnlibs.org/api/'
+        self.headers = {
+            'referer': 'https://ranobelib.me/',
+            'site-id': '3'
+        }
         self.session: ClientSession | None = None
 
     async def initialize(self):
         """Инициализация сессии"""
-        self.session = aiohttp.ClientSession(self.base_url)
+        self.session = ClientSession(self.base_url, headers=self.headers)
         print('[INFO] Session initialized')
 
     async def close(self):
