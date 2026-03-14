@@ -72,9 +72,8 @@ class SubHandler(commands.Cog):
         # Мне так-то похуй, больше или меньше инфы из БД за раз запрашивать будут,
         # если это практически неразличимо в плане производительности
 
-        print(f'Начинаю проверку подписки:')
-        # print(f'({sub['id']}, {sub['target_type']}, {sub['target_id']}, {sub['newest_id_chapter']}, {sub['created_at']})')
-        print(f'({", ".join(map(str, sub.values()))})')
+        print(f'Начинаю проверку подписки:\n'
+              f'({sub['id']}, {sub['target_type']}, {sub['target_id']}, {sub['newest_id_chapter']}, {sub['created_at']})')
 
         try:
             newest_chapter_id: int | None = None
