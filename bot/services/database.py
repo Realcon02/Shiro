@@ -1,15 +1,15 @@
-import asyncpg
+from asyncpg import Connection, Pool, Record, create_pool
 
 
 class DatabaseManager:
     """Менеджер базы данных"""
 
     def __init__(self):
-        self.pool: asyncpg.Pool | None = None
+        self.pool: Pool | None = None
 
     async def initialize(self, db_params):
         """Создание пула соединений"""
-        self.pool = await asyncpg.create_pool(
+        self.pool = create_pool(
             min_size=1, max_size=8, **db_params
         )
         print('[INFO] Database pool initialized')
@@ -26,7 +26,7 @@ class DatabaseManager:
     async def create_sub(self, target_type: str, target_id: int, newest_id_chapter: int) -> int:
         """Создание подписки"""
 
-        conn: asyncpg.Connection
+        conn: Connection
         async with self.pool.acquire() as conn:
             async with conn.transaction():
                 return await conn.fetchval("""
@@ -40,7 +40,7 @@ class DatabaseManager:
     async def add_sub_to_guild(self, sub_id: int, guild_id: int, channel_id: int):
         """Добавление подписки на сервер"""
 
-        conn: asyncpg.Connection
+        conn: Connection
         async with self.pool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("""
@@ -54,7 +54,7 @@ class DatabaseManager:
     async def update_sub(self, sub_id: int, newest_chapter_id: int):
         """Обновление подписки, т.е. обновление ID новейшей главы"""
 
-        conn: asyncpg.Connection
+        conn: Connection
         async with self.pool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("""
@@ -66,7 +66,7 @@ class DatabaseManager:
     async def check_sub_guild_exists(self, sub_id: int, guild_id: int) -> bool:
         """Проверка существования подписки у сервера"""
 
-        conn: asyncpg.Connection
+        conn: Connection
         async with self.pool.acquire() as conn:
             return await conn.fetchval("""
                 SELECT EXISTS
@@ -82,7 +82,7 @@ class DatabaseManager:
 
         work_id, name, rus_name, slug_url = work_info.values()
 
-        conn: asyncpg.Connection
+        conn: Connection
         async with self.pool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("""
@@ -95,10 +95,10 @@ class DatabaseManager:
 
 
     # Операции чтения
-    async def get_all_subscriptions(self) -> list:
+    async def get_all_subscriptions(self) -> list[Record]:
         """Получение всех подписок"""
 
-        conn: asyncpg.Connection
+        conn: Connection
         async with self.pool.acquire() as conn:
             return await conn.fetch("""
                 SELECT * FROM subscriptions
@@ -107,7 +107,7 @@ class DatabaseManager:
     async def get_sub_id(self, target_type: str, target_id: int) -> int | None:
         """Получение ID подписки, если она существует"""
 
-        conn: asyncpg.Connection
+        conn: Connection
         async with self.pool.acquire() as conn:
             return await conn.fetchval("""
                 SELECT id FROM subscriptions
@@ -115,10 +115,10 @@ class DatabaseManager:
                 target_type, target_id
             )
 
-    async def get_work_info(self, target_id: int) -> asyncpg.Record:
+    async def get_work_info(self, target_id: int) -> Record:
         """Получение информации о произведении"""
 
-        conn: asyncpg.Connection
+        conn: Connection
         async with self.pool.acquire() as conn:
             return await conn.fetchrow("""
                 SELECT name, rus_name, slug_url FROM works
@@ -126,10 +126,10 @@ class DatabaseManager:
                 target_id
             )
 
-    async def get_guilds_for_sub(self, sub_id: int) -> list[asyncpg.Record]:
+    async def get_guilds_for_sub(self, sub_id: int) -> list[Record]:
         """Возвращает список серверов, имеющих данную подписку"""
 
-        conn: asyncpg.Connection
+        conn: Connection
         async with self.pool.acquire() as conn:
             return await conn.fetch("""
                 SELECT guild_id, channel_id FROM subscriptions_guilds
