@@ -1,4 +1,7 @@
+import traceback
+
 import discord
+from aiohttp import ClientConnectorError, ServerDisconnectedError
 from discord import AutocompleteContext, TextChannel, OptionChoice, option
 from discord.ext import commands
 
@@ -15,22 +18,29 @@ class Subscription(commands.Cog):
     # Автозаполнения
     async def get_works_auto(self, ctx: AutocompleteContext):
         """Автозаполнение для поиска произведений"""
+        try:
+            site = ctx.options.get('site') or 3
+            title = ctx.value
 
-        site = ctx.options.get('site') or 3
-        title = ctx.value
+            if not title:
+                return []
 
-        if not title:
+            results = await self.lib_api.search_works(site, title)
+            return results[:25]
+
+        except (ClientConnectorError, ServerDisconnectedError, OSError) as e:
+            print(f'[WARN] Network error in autocomplete: {type(e).__name__}')
             return []
-        return await self.lib_api.search_works(site, title)
+        except Exception:
+            traceback.print_exc()
+            return []
 
     @staticmethod
     async def get_suitable_channels(ctx: AutocompleteContext):
         """
         Автозаполнение доступных каналов
-
         НЕ ДОДЕЛАНА
         """
-
         channels = []
         for channel in ctx.bot.get_all_channels():
             if isinstance(channel, TextChannel):
@@ -44,46 +54,70 @@ class Subscription(commands.Cog):
 
     # Группа команд "sub"
     subscription = discord.SlashCommandGroup(name='sub')
-    _site_options = [OptionChoice('RanobeLIB', 3), OptionChoice('MangaLIB', 1)]
+    _site_options = [
+        OptionChoice('RanobeLIB', 3),
+        OptionChoice('MangaLIB', 1),
+    ]
 
     @subscription.command(name='help')
     async def help_sub(self, ctx: discord.ApplicationContext):
         await ctx.respond('В разработке')
 
-    @subscription.command(name='add_of_work',
-                          description='Создать подписку типа «Произведение»')
-    @option(name='site',
-            description='Выберите сайт для поиска (по умолчанию RanobeLIB)',
-            input_type=int,
-            choices=_site_options)
-    @option(name='work',
-            description='Поиск произведения',
-            input_type=str,
-            autocomplete=get_works_auto)
-    @option(name='channel',
-            description='Выберите текстовый канал, в котором у бота есть необходимые права для отправки уведомлений',
-            input_type=TextChannel,
-            autocomplete=get_suitable_channels)
-    async def add_of_work(self,
-                          ctx: discord.ApplicationContext,
-                          site: int,
-                          work: str,
-                          channel: TextChannel):
-        work_info = await self.lib_api.search_work(site, work.rstrip('...'))
+    @subscription.command(
+        name='add_of_work',
+        description='Создать подписку типа «Произведение»'
+    )
+    @option(
+        name='site',
+        description='Выберите сайт для поиска (по умолчанию RanobeLIB)',
+        input_type=int,
+        choices=_site_options
+    )
+    @option(
+        name='work',
+        description='Поиск произведения',
+        input_type=str,
+        autocomplete=get_works_auto
+    )
+    @option(
+        name='channel',
+        description='Выберите текстовый канал, в котором у бота есть необходимые права для отправки уведомлений',
+        input_type=TextChannel,
+        autocomplete=get_suitable_channels
+    )
+    async def add_of_work(
+            self,ctx: discord.ApplicationContext,
+            site: int,
+            work: str,
+            channel: TextChannel
+    ):
+        try:
+            work_info = await self.lib_api.search_work(site, work.rstrip('...'))
 
-        sub_id = await self.db.get_sub_id('works', work_info['id'])
-        if not sub_id:
-            newest_id_work = await self.lib_api.search_newest_id_chapter_work(work_info['slug_url'])
-            await self.db.add_work(work_info)
+            sub_id = await self.db.get_sub_id('works', work_info['id'])
+            if not sub_id:
+                newest_id_work = await self.lib_api.search_newest_id_chapter_work(work_info['slug_url'])
+                await self.db.add_work(work_info)
 
-            sub_id = await self.db.create_sub('works', work_info['id'], newest_id_work)
-            print(f"Created new subscription with ID: {sub_id}")
+                sub_id = await self.db.create_sub('works', work_info['id'], newest_id_work)
+                print(f"Created new subscription with ID: {sub_id}")
 
-        if not await self.db.check_sub_guild_exists(sub_id, ctx.guild.id):
-            await self.db.add_sub_to_guild(sub_id, ctx.guild.id, channel.id)
-            await ctx.respond('Подписка успешно создана!')
-        else:
-            await ctx.respond('Данная подписка уже есть на этом сервере')
+            if not await self.db.check_sub_guild_exists(sub_id, ctx.guild.id):
+                await self.db.add_sub_to_guild(sub_id, ctx.guild.id, channel.id)
+                await ctx.respond('Подписка успешно создана!')
+            else:
+                await ctx.respond('Данная подписка уже есть на этом сервере')
+
+        except (ClientConnectorError, ServerDisconnectedError, OSError) as e:
+            print(f"Network error in add_of_work: {e}")
+            # Отправляем ответ только если ещё не отправили
+            if not ctx.response.is_done():
+                await ctx.respond('Ошибка сети. Попробуйте позже.', ephemeral=True)
+        except Exception as e:
+            print(f"Error in add_of_work:\n{type(e).__name__}: {e}")
+            traceback.print_exc()
+            if not ctx.response.is_done():
+                await ctx.respond('Произошла ошибка при обработке команды.', ephemeral=True)
 
         # await ctx.send(f'> Информация:\n'
         #                f'Сайт: {site}\n'
