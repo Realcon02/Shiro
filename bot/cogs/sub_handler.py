@@ -1,8 +1,11 @@
 import asyncio
+import random
+import traceback
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import discord
+from aiohttp import ClientConnectorError
 from discord.ext import commands, tasks
 
 from bot import Shiro
@@ -16,7 +19,6 @@ if TYPE_CHECKING:
 
 class SubHandler(commands.Cog):
     """Обработчик подписок"""
-
     def __init__(self, bot: Shiro) -> None:
         self.bot = bot
         self.lib_api: LibAPI = bot.lib_api
@@ -31,7 +33,6 @@ class SubHandler(commands.Cog):
     @tasks.loop(minutes=interval_checking_new_chapters)
     async def check_new_chapters_loop(self):
         """Цикл проверки новых глав"""
-
         await self.check_new_chapters()
 
     @check_new_chapters_loop.before_loop
@@ -55,6 +56,8 @@ class SubHandler(commands.Cog):
 
             for sub in subscriptions:
                 await self.process_sub(sub)
+                # Небольшая случайная задержка между подписками, чтобы не спамить API
+                await asyncio.sleep(random.uniform(0.5, 1.5))
 
         except Exception as e:
             print(f'Error while checking chapters:\n{type(e).__name__}: {e}')
@@ -123,9 +126,13 @@ class SubHandler(commands.Cog):
 
             else:
                 print('Новых глав не обнаружено')
-
+        except ClientConnectorError as e:
+            print(f"Network error for sub {sub['id']}:\n{type(e).__name__}: {e}")
+            traceback.print_exc()
+            return
         except Exception as e:
             print(f"Error processing subscription {sub['id']}:\n{type(e).__name__}: {e}")
+            traceback.print_exc()
 
     async def send_notification(self, guild_sub, work_info, chapter_info):
         """Отправка уведомления на конкретный сервер"""
