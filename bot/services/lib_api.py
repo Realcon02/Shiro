@@ -1,6 +1,5 @@
 from aiohttp import ClientSession, ClientTimeout, ClientConnectorError, ServerDisconnectedError
 from aiohttp_retry import RetryClient, ExponentialRetry
-from random import uniform
 
 
 class LibAPI:
@@ -111,7 +110,7 @@ class LibAPI:
             'number': '',
             'name': ''
         }
-        branch_id: int
+        branch_id: str | None = None
 
         url = f'manga/{slug_url_work}/chapters'
         async with self.session.get(url=url) as resp:
@@ -123,13 +122,17 @@ class LibAPI:
                         chapter_info['volume'] = chapter['volume']
                         chapter_info['number'] = chapter['number']
                         branch_id = branch['branch_id']
+                        break
+                else: continue
+                break
 
         url = f'manga/{slug_url_work}/chapter'
         params = {
-            'branch_id': branch_id,
             'number': chapter_info['number'],
             'volume': chapter_info['volume']
         }
+        if branch_id != 'null': params['branch_id'] = branch_id
+
         async with self.session.get(url=url, params=params) as resp:
             name = (await resp.json())['data']['name']
             chapter_info['name'] = name
