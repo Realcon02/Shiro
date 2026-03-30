@@ -1,20 +1,43 @@
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientTimeout, ClientConnectorError, ServerDisconnectedError
+from aiohttp_retry import RetryClient, ExponentialRetry
+from random import uniform
 
 
 class LibAPI:
     """Асинхронный клиент для работы с API RanobeLIB и MangaLIB"""
-
     def __init__(self):
         self.base_url = 'https://api.cdnlibs.org/api/'
         self.headers = {
             'referer': 'https://ranobelib.me/',
-            'site-id': '3'
+            'site-id': '3',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
-        self.session: ClientSession | None = None
+        self.session: RetryClient | None = None
 
     async def initialize(self):
         """Инициализация сессии"""
-        self.session = ClientSession(self.base_url, headers=self.headers)
+        # Настройка повторных попыток
+        retry_options = ExponentialRetry(
+            attempts=5,         # 1 попытка + 4 повтора
+            start_timeout=0.1,  # Пауза перед первым повтором
+            max_timeout=1.0,    # Максимальная пауза
+            exceptions={        # Ошибки, при которых делаем retry
+                ConnectionResetError,
+                ClientConnectorError,
+                ServerDisconnectedError,
+                OSError,
+            },
+        )
+
+        # Создаем RetryClient поверх обычной сессии
+        self.session = RetryClient(
+            client_session=ClientSession(
+                base_url=self.base_url,
+                headers=self.headers,
+                timeout=ClientTimeout(total=30, connect=10, sock_read=15)
+            ),
+            retry_options=retry_options
+        )
         print('[INFO] Session initialized')
 
     async def close(self):
@@ -128,3 +151,7 @@ class LibAPI:
                         new_ids.append(chapter_id)
 
         return new_ids
+
+    async def get_branches_of_work(self, slug_url_work) -> list[str]:
+        """Возвращает названия веток"""
+        pass
