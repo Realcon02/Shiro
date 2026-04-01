@@ -19,7 +19,7 @@ class LibAPI:
         retry_options = ExponentialRetry(
             attempts=5,         # 1 попытка + 4 повтора
             start_timeout=0.1,  # Пауза перед первым повтором
-            max_timeout=1.0,    # Максимальная пауза
+            max_timeout=5.0,    # Максимальная пауза
             exceptions={        # Ошибки, при которых делаем retry
                 ConnectionResetError,
                 ClientConnectorError,
