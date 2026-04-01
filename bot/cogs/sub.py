@@ -4,9 +4,11 @@ import discord
 from aiohttp import ClientConnectorError, ServerDisconnectedError
 from discord import AutocompleteContext, TextChannel, OptionChoice, option
 from discord.ext import commands
+from discord.ext.pages import Paginator
 
 from bot import Shiro
 from bot.services import DatabaseManager, LibAPI
+from bot.utils.embeds import build_sub_pages
 
 
 class Subscription(commands.Cog):
@@ -64,7 +66,7 @@ class Subscription(commands.Cog):
         await ctx.respond('В разработке')
 
     @subscription.command(
-        name='add_of_work',
+        name='add_work',
         description='Создать подписку типа «Произведение»'
     )
     @option(
@@ -150,9 +152,23 @@ class Subscription(commands.Cog):
     async def delete_sub(self, ctx: discord.ApplicationContext):
         await ctx.respond('В разработке')
 
-    @subscription.command(name='list')
+    @subscription.command(
+        name='list',
+        description='Список подписок этого сервера',
+    )
     async def list_sub(self, ctx: discord.ApplicationContext):
-        await ctx.respond('В разработке')
+        await ctx.defer()
+
+        try:
+            records = await self.db.get_guild_subscriptions(ctx.guild_id)
+        except Exception:
+            traceback.print_exc()
+            await ctx.respond('Ошибка при обращении к базе данных.', ephemeral=True)
+            return
+
+        pages = build_sub_pages(records, ctx.guild.name)
+        paginator = Paginator(pages=pages)
+        await paginator.respond(ctx.interaction)
 
 
 def setup(bot) -> None:
