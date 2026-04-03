@@ -1,6 +1,8 @@
+import asyncio
 import os
 
 import discord
+from discord import Status
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -63,10 +65,17 @@ class Shiro(commands.Bot):
         await super().start(self._TOKEN, **kwargs)
 
     async def close(self):
+        new_status = Status.idle
+        await self.change_presence(status=new_status)
+        self.status = new_status
+
         if self.db:
             await self.db.close()
         if self.lib_api:
             await self.lib_api.close()
+
+        await asyncio.sleep(0.3)
+
         await super().close()
 
     async def on_ready(self):

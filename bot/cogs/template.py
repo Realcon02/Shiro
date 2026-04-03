@@ -1,4 +1,5 @@
 import discord
+from discord import Status
 from discord.ext import commands
 
 from bot import Shiro
@@ -16,11 +17,17 @@ class Template(commands.Cog):
 
     @commands.slash_command(name="test-slash")
     async def test_slash(self, ctx: discord.ApplicationContext):
+        print("Used command 'test-slash'")
+
+        new_status = Status.idle if self.bot.status == Status.online else Status.online
+        await self.bot.change_presence(status=new_status)
+        self.bot.status = new_status
+
         await ctx.respond("Успешный тест!")
 
     '''
     @bridge.bridge_command(name='test-bridge')
-    async def test_bridge(self, ctx: bridge.context.BridgeApplicationContext):
+    async def test_bridge(self, ctx: bridge.context.BridgeExtContext | bridge.context.BridgeApplicationContext):
         """
         При вызове через префикс тип ctx - bridge.context.BridgeExtContext
         При вызове через черту тип ctx - bridge.context.BridgeApplicationContext
