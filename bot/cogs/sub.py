@@ -9,6 +9,7 @@ from discord.ext.pages import Paginator
 from bot import Shiro
 from bot.services import DatabaseManager, LibAPI
 from bot.utils.embeds import build_sub_pages
+from bot.utils.formatters import truncate
 
 
 class Subscription(commands.Cog):
@@ -27,8 +28,8 @@ class Subscription(commands.Cog):
             if not title:
                 return []
 
-            results = await self.lib_api.search_works(site, title)
-            return results[:25]
+            works: list = await self.lib_api.search_works(site, title)
+            return [truncate(w['rus_name'] or w['name']) for w in works[:25]]
 
         except (ClientConnectorError, ServerDisconnectedError, OSError) as e:
             print(f'[WARN] Network error in autocomplete: {type(e).__name__}')

@@ -59,9 +59,9 @@ class LibAPI:
             total = []
             for work in works:
                 name_work: str = work['rus_name'] or work['name']
-                total.append(name_work if len(name_work) <= 100 else name_work[:97].strip() + '...')
+                total.append(name_work.strip() if len(name_work) <= 100 else name_work[:97].strip() + '...')
 
-        return total
+        return works
 
     async def search_newest_id_chapter_work(self, slug_url_work: str):
         url = f'manga/{slug_url_work}/chapters'
