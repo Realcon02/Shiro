@@ -2,7 +2,7 @@ import traceback
 
 import discord
 from aiohttp import ClientConnectorError, ServerDisconnectedError
-from discord import AutocompleteContext, TextChannel, OptionChoice, option
+from discord import AutocompleteContext, OptionChoice, option
 from discord.ext import commands
 from discord.ext.pages import Paginator
 
@@ -45,11 +45,16 @@ class Subscription(commands.Cog):
         НЕ ДОДЕЛАНА
         """
         guild = ctx.interaction.guild
+        user = ctx.interaction.user
         channels = []
         for channel in guild.text_channels:
-            perms = channel.permissions_for(guild.me)
-            print(channel.name)
-            if all([perms.view_channel, perms.send_messages, perms.embed_links]) and ctx.value.lower() in channel.name.lower():
+            bot_perms = channel.permissions_for(guild.me)
+            user_perms = channel.permissions_for(user)
+            if (
+                all([bot_perms.view_channel, bot_perms.send_messages, bot_perms.embed_links]) and
+                all([user_perms.view_channel, user_perms.send_messages, user_perms.embed_links]) and 
+                ctx.value.lower() in channel.name.lower()
+            ):
                 channels.append(OptionChoice(
                     name=f'{channel.category.name}: {channel.name}',
                     value=f'ch_{channel.id}',
