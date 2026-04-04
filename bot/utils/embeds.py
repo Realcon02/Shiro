@@ -6,10 +6,10 @@ from config import embed_color
 
 
 TYPE_LABELS: dict[str, str] = {
-    'works':         ':book:',
-    'teams':         ':busts_in_silhouette:',
-    'branches_works':':herb:',
-    'works_teams':   ':books:',
+    'works':         '📖',
+    'teams':         '👥',
+    'branches_works':'🌿',
+    'works_teams':   '📚',
 }
 '''
 'works':          '📖 Произведение',

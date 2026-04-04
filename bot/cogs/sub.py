@@ -8,7 +8,7 @@ from discord.ext.pages import Paginator
 
 from bot import Shiro
 from bot.services import DatabaseManager, LibAPI
-from bot.utils.embeds import build_sub_pages
+from bot.utils.embeds import build_sub_pages, TYPE_LABELS
 from bot.utils.formatters import truncate
 
 
@@ -54,6 +54,22 @@ class Subscription(commands.Cog):
                         channel.id
                     ))
         return channels[:25]  # Ограничиваем количество
+
+    async def get_guild_subs_auto(self, ctx: AutocompleteContext):
+        """Автозаполнение подписок текущего сервера"""
+        try:
+            records = await self.db.get_guild_subscriptions(ctx.interaction.guild_id)
+            return [
+                OptionChoice(
+                    name=f"{TYPE_LABELS.get(str(r['type']), r['type'])}: {r['description'] or '—'}"[:100],
+                    value=r['sub_id']
+                )
+                for r in records
+                if not ctx.value or ctx.value.lower() in (r['description'] or '').lower()
+            ][:25]
+        except Exception:
+            traceback.print_exc()
+            return []
 
     # Группа команд "sub"
     subscription = discord.SlashCommandGroup(name='sub')
@@ -149,9 +165,26 @@ class Subscription(commands.Cog):
     #         sub_add_team(last_chapter_id)
     #         await ctx.respond(f'{channel.mention}\n{site}\n{type_sub}\n{title}\n{team_or_branch}\n\n{last_chapter_id}')
 
-    @subscription.command(name='delete')
-    async def delete_sub(self, ctx: discord.ApplicationContext):
-        await ctx.respond('В разработке')
+    @subscription.command(
+        name='delete',
+        description='Удалить подписку с этого сервера',
+    )
+    @option(
+        name='sub',
+        description='Выберите подписку для удаления',
+        input_type=int,
+        autocomplete=get_guild_subs_auto,
+    )
+    async def delete_sub(self, ctx: discord.ApplicationContext, sub: int):
+        try:
+            deleted = await self.db.remove_sub_from_guild(sub, ctx.guild_id)
+            if deleted:
+                await ctx.respond('Подписка успешно удалена!')
+            else:
+                await ctx.respond('Такая подписка не найдена на этом сервере.', ephemeral=True)
+        except Exception:
+            traceback.print_exc()
+            await ctx.respond('Ошибка при удалении подписки.', ephemeral=True)
 
     @subscription.command(
         name='list',

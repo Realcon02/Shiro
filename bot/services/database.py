@@ -73,6 +73,18 @@ class DatabaseManager:
                 sub_id, guild_id
             )
 
+    async def remove_sub_from_guild(self, sub_id: int, guild_id: int) -> bool:
+        """Удаляет подписку с сервера. Возвращает True, если запись была удалена."""
+
+        conn: Connection
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                result = await conn.execute("""
+                    DELETE FROM subscriptions_guilds
+                    WHERE subscription_id = $1 AND guild_id = $2
+                """, sub_id, guild_id)
+                return result == 'DELETE 1'
+
     # Операции с метаданными
     async def add_work(self, work_info: dict) -> None:
         """Добавление информации о произведении в БД"""
