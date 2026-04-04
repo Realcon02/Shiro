@@ -69,6 +69,12 @@ class SubHandler(commands.Cog):
         print(f'({", ".join(map(str, sub.values()))})')
 
         try:
+            guild_subs = await self.db.get_guilds_for_sub(sub['id'])
+            if not guild_subs:
+                print(f"Sub {sub['id']} has no guilds, removing...")
+                await self.db.delete_orphan_sub(sub['id'])
+                return
+
             work_info: Record | None = None
             new_ids = []
 

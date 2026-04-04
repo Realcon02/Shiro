@@ -85,6 +85,16 @@ class DatabaseManager:
                 """, sub_id, guild_id)
                 return result == 'DELETE 1'
 
+    async def delete_orphan_sub(self, sub_id: int) -> None:
+        """Удаляет подписку, у которой нет серверов"""
+
+        conn: Connection
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                await conn.execute("""
+                    DELETE FROM subscriptions WHERE id = $1
+                """, sub_id)
+
     # Операции с метаданными
     async def add_work(self, work_info: dict) -> None:
         """Добавление информации о произведении в БД"""

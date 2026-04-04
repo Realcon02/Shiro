@@ -154,7 +154,3 @@ class LibAPI:
                         new_ids.append(chapter_id)
 
         return new_ids
-
-    async def get_branches_of_work(self, slug_url_work) -> list[str]:
-        """Возвращает названия веток"""
-        pass
