@@ -39,20 +39,21 @@ class Subscription(commands.Cog):
             return []
 
     @staticmethod
-    async def get_suitable_channels(ctx: AutocompleteContext):
+    async def get_suitable_channels_auto(ctx: AutocompleteContext):
         """
         Автозаполнение доступных каналов
         НЕ ДОДЕЛАНА
         """
+        guild = ctx.interaction.guild
         channels = []
-        for channel in ctx.bot.get_all_channels():
-            if isinstance(channel, TextChannel):
-                perms = channel.permissions_for(channel.guild.me)
-                if perms.send_messages and perms.embed_links:
-                    channels.append(discord.OptionChoice(
-                        f"#{channel.name} ({channel.guild.name})",
-                        channel.id
-                    ))
+        for channel in guild.text_channels:
+            perms = channel.permissions_for(guild.me)
+            print(channel.name)
+            if all([perms.view_channel, perms.send_messages, perms.embed_links]) and ctx.value.lower() in channel.name.lower():
+                channels.append(OptionChoice(
+                    name=f'{channel.category.name}: {channel.name}',
+                    value=f'ch_{channel.id}',
+                ))
         return channels[:25]  # Ограничиваем количество
 
     async def get_guild_subs_auto(self, ctx: AutocompleteContext):
@@ -84,32 +85,33 @@ class Subscription(commands.Cog):
 
     @subscription.command(
         name='add_work',
-        description='Создать подписку типа «Произведение»'
+        description='Создать подписку типа «Произведение»',
     )
     @option(
         name='site',
         description='Выберите сайт для поиска (по умолчанию RanobeLIB)',
         input_type=int,
-        choices=_site_options
+        choices=_site_options,
     )
     @option(
         name='work',
         description='Поиск произведения',
         input_type=str,
-        autocomplete=get_works_auto
+        autocomplete=get_works_auto,
     )
     @option(
         name='channel',
         description='Выберите текстовый канал, в котором у бота есть необходимые права для отправки уведомлений',
-        input_type=TextChannel,
-        autocomplete=get_suitable_channels
+        input_type=str,
+        autocomplete=get_suitable_channels_auto,
     )
     async def add_of_work(
-            self,ctx: discord.ApplicationContext,
+            self, ctx: discord.ApplicationContext,
             site: int,
             work: str,
-            channel: TextChannel
+            channel: str,
     ):
+        channel = ctx.guild.get_channel(int(channel.removeprefix('ch_')))
         try:
             work_info = await self.lib_api.search_work(site, work.rstrip('...'))
 
