@@ -116,7 +116,15 @@ class Subscription(commands.Cog):
             work: str,
             channel: str,
     ):
-        channel = ctx.guild.get_channel(int(channel.removeprefix('ch_')))
+        try:
+            channel = ctx.guild.get_channel(int(channel.removeprefix('ch_')))
+        except ValueError:
+            await ctx.respond(
+                'Канал не найдено. Воспользуйтесь автодополнением и выберите вариант из списка.',
+                ephemeral=True
+            )
+            return
+
         try:
             work_info = await self.lib_api.search_work(site, work.rstrip('...'))
 
@@ -134,6 +142,11 @@ class Subscription(commands.Cog):
             else:
                 await ctx.respond('Данная подписка уже есть на этом сервере')
 
+        except IndexError:
+            await ctx.respond(
+                'Произведение не найдено. Воспользуйтесь автодополнением и выберите вариант из списка.',
+                ephemeral=True
+            )
         except (ClientConnectorError, ServerDisconnectedError, OSError) as e:
             print(f"Network error in add_of_work: {e}")
             # Отправляем ответ только если ещё не отправили
