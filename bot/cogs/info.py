@@ -1,6 +1,7 @@
 from random import choice
 
 import discord
+from discord import option
 from discord.ext import commands
 
 
@@ -23,7 +24,15 @@ class Info(commands.Cog):
 
     info = discord.SlashCommandGroup(name='info')
 
-    @info.command(name='avatar', description="Отправляет аватар выбранного пользователя")
+    @info.command(
+        name='avatar',
+        description="Отправляет аватар выбранного пользователя",
+    )
+    @option(
+        name='member',
+        description="Выберите пользователя",
+        input_type=discord.Member,
+    )
     async def view_avatar(self, ctx: discord.ApplicationContext, member: discord.Member):
         user = member.name
         image = member.avatar.url
@@ -35,7 +44,15 @@ class Info(commands.Cog):
 
         await ctx.respond(embed=embed)
 
-    @info.command(name='banner', description="Отправляет баннер выбранного пользователя")
+    @info.command(
+        name='banner',
+        description="Отправляет баннер выбранного пользователя",
+    )
+    @option(
+        name='member',
+        description="Выберите пользователя",
+        input_type=discord.Member,
+    )
     async def view_banner(self, ctx: discord.ApplicationContext, member: discord.Member):
         user = member.name
         image = (await self.bot.fetch_user(member.id)).banner or choice(self._list_images)
