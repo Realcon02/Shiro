@@ -21,10 +21,10 @@ from .services import DatabaseManager, LibAPI
 
 class Shiro(commands.Bot):
     def __init__(self):
-        intents = discord.Intents.all()
         super().__init__(
             command_prefix=commands.when_mentioned_or(*config.prefixes),
-            intents=intents
+            intents=discord.Intents.all(),
+            status=Status.idle,
         )
 
         load_dotenv()
@@ -65,9 +65,8 @@ class Shiro(commands.Bot):
         await super().start(self._TOKEN, **kwargs)
 
     async def close(self):
-        new_status = Status.idle
-        await self.change_presence(status=new_status)
-        self.status = new_status
+        await self.change_presence(status=Status.idle)
+        self.status = Status.idle
 
         if self.db:
             await self.db.close()
@@ -79,4 +78,6 @@ class Shiro(commands.Bot):
         await super().close()
 
     async def on_ready(self):
+        await self.change_presence(status=Status.online)
+        self.status = Status.online
         print(f"{self.user.name} is ready!")
