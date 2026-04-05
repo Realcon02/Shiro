@@ -134,7 +134,7 @@ class SubHandler(commands.Cog):
                 # Создаем embed с уведомлением
                 embed = discord.Embed(
                     title="Вышла новая глава!",
-                    description=f"**{work_info['name']}**",
+                    description=f"**{work_info['rus_name'] or work_info['name']}**",
                     color=discord.Color.green()
                 )
                 embed.add_field(name="Том", value=chapter_info['volume'], inline=True)
