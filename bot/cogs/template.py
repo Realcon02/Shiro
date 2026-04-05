@@ -1,5 +1,4 @@
 import discord
-from discord import Status
 from discord.ext import commands
 
 from bot import Shiro
@@ -15,13 +14,9 @@ class Template(commands.Cog):
     async def test_prefix(self, ctx: commands.Context):
         await ctx.reply("Успешный тест!")
 
-    @commands.slash_command(name="test-slash")
+    @commands.slash_command(name='test-slash')
     async def test_slash(self, ctx: discord.ApplicationContext):
         print("Used command 'test-slash'")
-
-        new_status = Status.idle if self.bot.status == Status.online else Status.online
-        await self.bot.change_presence(status=new_status)
-        self.bot.status = new_status
 
         await ctx.respond("Успешный тест!")
 
