@@ -1,4 +1,5 @@
 import asyncio
+import signal
 
 from bot import Shiro
 
@@ -10,12 +11,20 @@ from bot import Shiro
 
 async def main():
     bot = Shiro()
+
+    loop = asyncio.get_running_loop()
+    loop.add_signal_handler(
+        signal.SIGTERM,
+        lambda: loop.create_task(bot.close())
+    )
+
     try:
         await bot.setup()
         await bot.start()
     finally:
         print("Cleaning up resources...")
-        await bot.close()
+        if not bot.is_closed():
+            await bot.close()
 
 
 if __name__ == "__main__":
