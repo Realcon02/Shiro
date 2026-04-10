@@ -1,6 +1,8 @@
+from random import choice
+
 import discord
-from random import randint
-from discord.ext import commands, bridge
+from discord import option
+from discord.ext import commands
 
 
 class Info(commands.Cog):
@@ -22,8 +24,16 @@ class Info(commands.Cog):
 
     info = discord.SlashCommandGroup(name='info')
 
-    @info.command(name='avatar')
-    async def view_avatar(self, ctx: bridge.context.BridgeApplicationContext, member: discord.Member):
+    @info.command(
+        name='avatar',
+        description="Отправляет аватар выбранного пользователя",
+    )
+    @option(
+        name='member',
+        description="Выберите пользователя",
+        input_type=discord.Member,
+    )
+    async def view_avatar(self, ctx: discord.ApplicationContext, member: discord.Member):
         user = member.name
         image = member.avatar.url
 
@@ -34,11 +44,18 @@ class Info(commands.Cog):
 
         await ctx.respond(embed=embed)
 
-    @info.command(name='banner')
-    async def view_banner(self, ctx: bridge.context.BridgeApplicationContext, member: discord.Member):
+    @info.command(
+        name='banner',
+        description="Отправляет баннер выбранного пользователя",
+    )
+    @option(
+        name='member',
+        description="Выберите пользователя",
+        input_type=discord.Member,
+    )
+    async def view_banner(self, ctx: discord.ApplicationContext, member: discord.Member):
         user = member.name
-        image = (await self.bot.fetch_user(member.id)).banner or self._list_images[
-            randint(0, len(self._list_images) - 1)]
+        image = (await self.bot.fetch_user(member.id)).banner or choice(self._list_images)
 
         embed = discord.Embed(
             title=f'Баннер {user}' if image not in self._list_images else f'У {user} нет баннера'
