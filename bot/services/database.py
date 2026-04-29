@@ -1,3 +1,5 @@
+import asyncio
+
 from asyncpg import Connection, Pool, Record, create_pool
 
 
@@ -8,10 +10,27 @@ class DatabaseManager:
 
     async def initialize(self, db_params):
         """Создание пула соединений"""
-        self.pool = await create_pool(
-            min_size=1, max_size=8, **db_params
-        )
-        print('[INFO] Database pool initialized')
+        retries = 10
+        delay = 2
+
+        for attempt in range(1, retries + 1):
+            try:
+                self.pool = await create_pool(
+                    min_size=1,
+                    max_size=8,
+                    timeout=5,
+                    **db_params
+                )
+                print('[INFO] Database pool initialized')
+                return
+
+            except Exception as e:
+                print(f'[DB] Attempt {attempt}/{retries} failed: {e}')
+
+                if attempt == retries:
+                    raise
+
+                await asyncio.sleep(delay)
 
     async def close(self):
         """Закрытие пула соединений"""
