@@ -176,6 +176,7 @@ COMMENT ON TABLE public.teams IS 'Таблица с информацией о к
 
 CREATE TABLE public.works (
     work_id bigint NOT NULL,
+    site_id smallint NOT NULL,
     name character varying(1023) NOT NULL,
     rus_name character varying(1023),
     slug_url character varying(1023) NOT NULL,
