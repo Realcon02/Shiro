@@ -2,7 +2,7 @@ import math
 
 import discord
 
-from config import embed_color
+from config import EMBED_COLOR
 
 
 TYPE_LABELS: dict[str, str] = {
@@ -30,7 +30,7 @@ def build_sub_pages(
         embed = discord.Embed(
             title=f'Подписки сервера «{guild_name}»',
             description='На этом сервере пока нет ни одной подписки.',
-            color=embed_color,
+            color=EMBED_COLOR,
         )
         return [embed]
 
@@ -46,7 +46,7 @@ def build_sub_pages(
                         '-# :busts_in_silhouette:⠀Команда\n' + \
                         '-# :herb:⠀Ветка произведения\n' + \
                         '-# :books:⠀Произведение от команды',
-            color=embed_color,  # discord.Color.blurple()
+            color=EMBED_COLOR,
         )
         embed.set_footer(text=f'Страница {page_idx + 1}/{total_pages} ・ Всего подписок: {len(records)}')
 

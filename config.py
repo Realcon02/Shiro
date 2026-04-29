@@ -1,4 +1,4 @@
-prefixes = ['!', '%', 's.']
-embed_color = 0x6488c4
-timeout_command = 60
-interval_checking_new_chapters = 10  # minutes
+PREFIXES = ['!', '%', 's.']
+EMBED_COLOR = 0x6488c4
+TIMEOUT_COMMAND = 60
+INTERVAL_CHECKING_NEW_CHAPTERS = 10  # minutes

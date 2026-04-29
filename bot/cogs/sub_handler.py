@@ -10,7 +10,7 @@ from discord.ext import commands, tasks
 
 from bot import Shiro
 from bot.services import DatabaseManager, LibAPI
-from config import interval_checking_new_chapters
+from config import INTERVAL_CHECKING_NEW_CHAPTERS
 
 # Импорт только для проверки типов (не выполняется при запуске)
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ class SubHandler(commands.Cog):
         self.check_new_chapters_loop.cancel()
 
     # Логика цикла
-    @tasks.loop(minutes=interval_checking_new_chapters)
+    @tasks.loop(minutes=INTERVAL_CHECKING_NEW_CHAPTERS)
     async def check_new_chapters_loop(self):
         """Цикл проверки новых глав"""
         await self.check_new_chapters()
