@@ -2,7 +2,7 @@
 .github
 .gitignore
 node_modules/
-venv/
+.venv/
 __pycache__/
 .env
 *.md
@@ -10,3 +10,4 @@ docker-compose*.yml
 Dockerfile
 tests/
 docs/
+requirements.txt
