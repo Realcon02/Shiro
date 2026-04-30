@@ -10,7 +10,7 @@ from discord.ext import commands, tasks
 
 from bot import Shiro
 from bot.services import DatabaseManager, LibAPI
-from bot.utils.notifications import ChapterNotificationView
+from bot.views import ChapterNotificationView
 from config import INTERVAL_CHECKING_NEW_CHAPTERS
 
 # Импорт только для проверки типов (не выполняется при запуске)
