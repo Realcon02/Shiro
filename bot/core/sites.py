@@ -18,7 +18,7 @@ MANGALIB = SiteConfig(
     headers={
         'Referer': 'https://mangalib.me/',
         'Site-Id': '1',
-        # 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     }
 )
 
@@ -30,7 +30,7 @@ RANOBELIB = SiteConfig(
     headers={
         'Referer': 'https://ranobelib.me/',
         'Site-Id': '3',
-        # 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     }
 )
 

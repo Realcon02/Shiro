@@ -2,11 +2,7 @@ import discord
 from discord import ButtonStyle
 from discord.ui import DesignerView, Container, TextDisplay, ActionRow, Button, Section, Thumbnail
 
-
-SITE_URLS = {
-    1: "https://mangalib.me",
-    3: "https://ranobelib.me"
-}
+from bot.core import SITES
 
 
 class ChapterNotificationView(DesignerView):
@@ -41,18 +37,12 @@ class ChapterNotificationView(DesignerView):
 
         return Section(text, accessory=thumbnail)
 
-    def _build_url(self):
-        url = f"https://ranobelib.me/ru/{self._work['slug_url']}/read/v{self._chapter['volume']}/c{self._chapter['number']}"
-        if bid := self._chapter['branch_id']:
-            url += f'?bid={bid}'
-
-        return url
-
     def _build_chapter_url(self):
-        base = SITE_URLS.get(self._work['site_id'])
-
-        if not base:
-            raise ValueError(f"Unknown site_id: {self._work['site_id']}")
+        try:
+            base = SITES.get(self._work['site_id']).base_url
+        except:
+            print(f"Unknown site_id: {self._work['site_id']}")
+            return None
 
         url = f"{base}/ru/{self._work['slug_url']}/read/v{self._chapter['volume']}/c{self._chapter['number']}"
 
@@ -65,7 +55,7 @@ class ChapterNotificationView(DesignerView):
         return ActionRow(
             Button(
                 label="Читать",
-                url=self._build_url(),
+                url=self._build_chapter_url(),
                 style=ButtonStyle.link,
                 emoji="📖",
             )
