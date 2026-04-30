@@ -118,17 +118,17 @@ class DatabaseManager:
     async def add_work(self, work_info: dict) -> None:
         """Добавление информации о произведении в БД"""
 
-        work_id, name, rus_name, slug_url = work_info.values()
+        work_id, site_id, name, rus_name, slug_url = work_info.values()
 
         conn: Connection
         async with self.pool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("""
                     INSERT INTO
-                    works(work_id, name, rus_name, slug_url)
-                    VALUES ($1, $2, $3, $4)
+                    works(work_id, site_id, name, rus_name, slug_url)
+                    VALUES ($1, $2, $3, $4, $5)
                     ON CONFLICT (work_id) DO NOTHING""",
-                    work_id, name, rus_name, slug_url
+                    work_id, site_id, name, rus_name, slug_url
                 )
 
     # Операции чтения
@@ -158,7 +158,7 @@ class DatabaseManager:
         conn: Connection
         async with self.pool.acquire() as conn:
             return await conn.fetchrow("""
-                SELECT name, rus_name, slug_url FROM works
+                SELECT site_id, name, rus_name, slug_url FROM works
                 WHERE work_id = $1""",
                 target_id
             )
