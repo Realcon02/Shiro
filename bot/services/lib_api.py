@@ -112,6 +112,7 @@ class LibAPI:
 
             work_info = {
                 'id': work['id'],
+                'site_id': site_id,
                 'name': work['name'],
                 'rus_name': work['rus_name'] or None,
                 'slug_url': work['slug_url']
@@ -177,3 +178,22 @@ class LibAPI:
                         new_ids.append(chapter_id)
 
         return new_ids
+
+    async def get_work_cover_path(self, site_id: int, slug_url_work: str) -> str:
+        """Возвращает ссылку на обложку произведения"""
+
+        site = _get_site(site_id)
+
+        url = _api(site.api_url, f'manga/{slug_url_work}')
+        headers = site.headers
+        async with self.session.get(url=url, headers=headers) as resp:
+            return (await resp.json())['data']['cover']['default']
+
+    async def get_work_cover(self, site_id: int, cover_url: str) -> bytes | None:
+        """Возвращает изображение в виде byte-кода"""
+
+        headers = _get_site(site_id).headers
+        async with self.session.get(url=cover_url, headers=headers) as resp:
+            if resp.status != 200:
+                raise Exception(f"Ошибка загрузки изображения: {resp.status}")
+            return await resp.read()

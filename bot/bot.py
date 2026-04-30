@@ -6,8 +6,8 @@ from discord import Status
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from .services import DatabaseManager, LibAPI
-from config import PREFIXES
+from bot.services import DatabaseManager, LibAPI, DiscordUploader
+from config import PREFIXES, UPLOAD_CHANNEL_ID
 
 '''
 Есть три разновидности ботов:
@@ -39,6 +39,7 @@ class Shiro(commands.Bot):
         }
         self.db: DatabaseManager | None = None
         self.lib_api: LibAPI | None = None
+        self.uploader: DiscordUploader = DiscordUploader(self, UPLOAD_CHANNEL_ID)
 
     async def setup(self):
         self.db = DatabaseManager()
