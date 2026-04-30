@@ -127,7 +127,8 @@ class LibAPI:
         chapter_info = {
             'volume': '',
             'number': '',
-            'name': ''
+            'name': '',
+            'branch_id': '',
         }
         branch_id: str | None = None
         site = _get_site(site_id)
@@ -152,7 +153,9 @@ class LibAPI:
             'number': chapter_info['number'],
             'volume': chapter_info['volume']
         }
-        if branch_id != 'null': params['branch_id'] = branch_id
+        if branch_id:
+            chapter_info['branch_id'] = branch_id
+            params['branch_id'] = branch_id
 
         async with self.session.get(url=url, params=params, headers=headers) as resp:
             name = (await resp.json())['data']['name']
