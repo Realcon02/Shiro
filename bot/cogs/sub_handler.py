@@ -10,6 +10,7 @@ from discord.ext import commands, tasks
 
 from bot import Shiro
 from bot.services import DatabaseManager, LibAPI
+from bot.utils.notifications import ChapterNotificationView
 from config import INTERVAL_CHECKING_NEW_CHAPTERS
 
 # Импорт только для проверки типов (не выполняется при запуске)
@@ -87,6 +88,7 @@ class SubHandler(commands.Cog):
                         return
 
                     new_ids = await self.lib_api.get_new_chapter_ids_work(
+                        work_info['site_id'],
                         work_info['slug_url'],
                         sub['newest_id_chapter'],
                     )
@@ -100,17 +102,24 @@ class SubHandler(commands.Cog):
             if new_ids:
                 print(f'Обнаружены новые главы: {new_ids}')
 
+                thumbnail_url = await self.bot.uploader.get_url_from_libapi(
+                    self.lib_api,
+                    work_info['slug_url'],
+                    work_info['site_id'],
+                )
+
                 # Последовательно обрабатываем каждую новую главу
                 for new_id in new_ids:
                     try:
-                        chapter_info = await self.lib_api.get_chapter_info(work_info['slug_url'], new_id)
+                        chapter_info = await self.lib_api.get_chapter_info(work_info['site_id'], work_info['slug_url'], new_id)
 
                         for guild_sub in guild_subs:
-                            await self.send_notification(guild_sub, work_info, chapter_info)
+                            await self.send_notification(guild_sub, work_info, chapter_info, thumbnail_url)
 
                         print(f"Notifications sent for chapter {new_id} to {len(guild_subs)} guilds")
                     except Exception as e:
                         print(f"Error processing chapter {new_id} for sub {sub['id']}:\n{type(e).__name__}: {e}")
+                        traceback.print_exc()
 
                 # Обновляем ID последней главы в БД
                 await self.db.update_sub(sub['id'], max(new_ids))
@@ -125,24 +134,19 @@ class SubHandler(commands.Cog):
             print(f"Error processing subscription {sub['id']}:\n{type(e).__name__}: {e}")
             traceback.print_exc()
 
-    async def send_notification(self, guild_sub, work_info, chapter_info):
+    async def send_notification(self, guild_sub, work_info, chapter_info, thumbnail_url):
         """Отправка уведомления на конкретный сервер"""
 
         try:
             channel = self.bot.get_channel(guild_sub['channel_id'])
             if channel and isinstance(channel, discord.TextChannel):
-                # Создаем embed с уведомлением
-                embed = discord.Embed(
-                    title="Вышла новая глава!",
-                    description=f"**{work_info['rus_name'] or work_info['name']}**",
-                    color=discord.Color.green()
+                # Создаем view с уведомлением
+                view = ChapterNotificationView(
+                    work_info,
+                    chapter_info,
+                    thumbnail_url,
                 )
-                embed.add_field(name="Том", value=chapter_info['volume'], inline=True)
-                embed.add_field(name="Глава", value=chapter_info['number'], inline=True)
-                embed.add_field(name="Название", value=chapter_info['name'] or "Без названия", inline=True)
-                embed.set_footer(text="Приятного чтения!")
-
-                await channel.send(embed=embed)
+                await channel.send(view=view)
 
                 print(f'Было отправлено уведомление на:\n'
                       f'  Сервер: {guild_sub['guild_id']}\n'

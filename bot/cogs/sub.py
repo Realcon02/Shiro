@@ -40,10 +40,7 @@ class Subscription(commands.Cog):
 
     @staticmethod
     async def get_suitable_channels_auto(ctx: AutocompleteContext):
-        """
-        Автозаполнение доступных каналов
-        НЕ ДОДЕЛАНА
-        """
+        """Автозаполнение доступных каналов"""
         guild = ctx.interaction.guild
         user = ctx.interaction.user
         channels = []
@@ -130,7 +127,7 @@ class Subscription(commands.Cog):
 
             sub_id = await self.db.get_sub_id('works', work_info['id'])
             if not sub_id:
-                newest_id_work = await self.lib_api.search_newest_id_chapter_work(work_info['slug_url'])
+                newest_id_work = await self.lib_api.search_newest_id_chapter_work(site, work_info['slug_url'])
                 await self.db.add_work(work_info)
 
                 sub_id = await self.db.create_sub('works', work_info['id'], newest_id_work)
@@ -157,33 +154,6 @@ class Subscription(commands.Cog):
             traceback.print_exc()
             if not ctx.response.is_done():
                 await ctx.respond('Произошла ошибка при обработке команды.', ephemeral=True)
-
-        # await ctx.send(f'> Информация:\n'
-        #                f'Сайт: {site}\n'
-        #                f'Произведение: {work}\n'
-        #                f'Канал: {channel.mention}\n'
-        #                f'ID работы: {id_work}\n'
-        #                f'URL слаг: {slug_url_work}\n'
-        #                f'ID подписки: {sub_id}')
-
-    # @subscription.command(name='add')
-    # @option('channel', channel_types=[ChannelType.text])
-    # @option('site', input_type=int, choices=)
-    # @option('type_sub', input_type=str, choices=['Team', 'Branch'])
-    # @option('title', input_type=str, autocomplete=get_titles_auto)
-    # @option('team_or_branch', input_type=int, autocomplete=get_team_or_branch_auto)
-    # async def add_sub(self,
-    #                   ctx: discord.ApplicationContext,
-    #                   channel: discord.TextChannel,
-    #                   site: int,
-    #                   type_sub: str,
-    #                   title: str,
-    #                   team_or_branch: int
-    #                   ):
-    #     if type_sub == 'Team':
-    #         last_chapter_id = search_last_chapter(title, team_or_branch)
-    #         sub_add_team(last_chapter_id)
-    #         await ctx.respond(f'{channel.mention}\n{site}\n{type_sub}\n{title}\n{team_or_branch}\n\n{last_chapter_id}')
 
     @subscription.command(
         name='delete',

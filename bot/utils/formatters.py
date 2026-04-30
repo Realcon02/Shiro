@@ -1,2 +1,2 @@
 def truncate(text: str, limit: int = 100) -> str:
-    return text if len(text) <= limit else text[:limit - 3].strip() + '...'
+    return text.strip() if len(text) <= limit else text[:limit - 3].strip() + '...'
