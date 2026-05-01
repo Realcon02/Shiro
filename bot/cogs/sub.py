@@ -7,10 +7,10 @@ from discord.ext import commands
 from discord.ext.pages import Paginator
 
 from bot import Shiro
-from bot.core import SUB_TYPES
+from bot.core import SITES, SUB_TYPES
 from bot.services import DatabaseManager, LibAPI
-from bot.utils.embeds import build_sub_pages, TYPE_LABELS
 from bot.utils.formatters import truncate
+from bot.views import SubListView
 
 
 class Subscription(commands.Cog):
@@ -191,9 +191,21 @@ class Subscription(commands.Cog):
             await ctx.respond('Ошибка при обращении к базе данных.', ephemeral=True)
             return
 
-        pages = build_sub_pages(records, ctx.guild.name)
-        paginator = Paginator(pages=pages)
-        await paginator.respond(ctx.interaction)
+        subs = []
+        for r in records:
+            sub_type = f"{SUB_TYPES[r['type']].emoji} {SUB_TYPES[r['type']].name}"
+
+            sub = {
+                'title': r['description'],
+                'url': f"{SITES.get(r['site_id'], 3).base_url}/ru/book/{r['slug_url']}",
+                'sub_type': sub_type,
+                'channel_id': r['channel_id']
+            }
+            subs.append(sub)
+
+        view = SubListView(subs, ctx.guild.name, ctx.author)
+
+        await ctx.respond(view=view)
 
 
 def setup(bot) -> None:
