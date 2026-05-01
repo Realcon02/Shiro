@@ -7,6 +7,7 @@ from discord.ext import commands
 from discord.ext.pages import Paginator
 
 from bot import Shiro
+from bot.core import SUB_TYPES
 from bot.services import DatabaseManager, LibAPI
 from bot.utils.embeds import build_sub_pages, TYPE_LABELS
 from bot.utils.formatters import truncate
@@ -64,7 +65,7 @@ class Subscription(commands.Cog):
             records = await self.db.get_guild_subscriptions(ctx.interaction.guild_id)
             return [
                 OptionChoice(
-                    name=f"{TYPE_LABELS.get(str(r['type']), r['type'])}: {r['description'] or '—'}"[:100],
+                    name=truncate(f"{SUB_TYPES[r['type']].emoji}: {r['description'] or '—'}"),
                     value=r['sub_id']
                 )
                 for r in records
