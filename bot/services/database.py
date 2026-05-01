@@ -186,6 +186,18 @@ class DatabaseManager:
                     s.target_type AS type,
                     sg.channel_id,
                     CASE s.target_type
+                        WHEN 'works'          THEN w.site_id
+                        WHEN 'branches_works' THEN bw_work.site_id
+                        WHEN 'works_teams'    THEN wt_work.site_id
+                        -- teams: NULL по умолчанию, ELSE не нужен
+                    END AS site_id,
+                    CASE s.target_type
+                        WHEN 'works'          THEN w.slug_url
+                        WHEN 'teams'          THEN t.slug_url
+                        WHEN 'branches_works' THEN bw_work.slug_url
+                        WHEN 'works_teams'    THEN wt_work.slug_url
+                    END AS slug_url,
+                    CASE s.target_type
                         WHEN 'works' THEN
                             COALESCE(w.rus_name, w.name)
                         WHEN 'teams' THEN
