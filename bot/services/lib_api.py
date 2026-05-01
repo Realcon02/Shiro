@@ -16,7 +16,7 @@ def _get_site(site_id: int):
 
 def _api(api_url: str, path: str) -> str:
     """Склеивает URL_API и последующий путь"""
-    return api_url + path
+    return api_url.strip('/') + '/' + path.strip('/')
 
 
 class LibAPI:
@@ -60,7 +60,7 @@ class LibAPI:
     async def search_works(self, site_id: int, searched_work: str) -> list[str]:
         site = _get_site(site_id)
 
-        url = _api(site.api_url, site.api_url)
+        url = _api(site.api_url, 'manga')
         params = {
             'q': searched_work,
             'site_id[]': site_id
