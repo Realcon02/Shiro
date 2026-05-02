@@ -34,7 +34,7 @@ class SubHandler(commands.Cog):
     @tasks.loop(minutes=INTERVAL_CHECKING_NEW_CHAPTERS)
     async def check_new_chapters_loop(self):
         """Цикл проверки новых глав"""
-        await self.check_new_chapters()
+        await self._check_new_chapters()
 
     @check_new_chapters_loop.before_loop
     async def before_check_new_chapters(self):
@@ -46,7 +46,7 @@ class SubHandler(commands.Cog):
         await asyncio.sleep(sleep_time)
 
     # Главные обрабатывающие функции
-    async def check_new_chapters(self):
+    async def _check_new_chapters(self):
         """Проверка новых глав для всех подписок"""
 
         try:
@@ -56,14 +56,14 @@ class SubHandler(commands.Cog):
             print(f'Found {len(subscriptions)} subscriptions to check')
 
             for sub in subscriptions:
-                await self.process_sub(sub)
+                await self._process_sub(sub)
                 # Небольшая случайная задержка между подписками, чтобы не спамить API
                 await asyncio.sleep(random.uniform(0.5, 1.5))
 
         except Exception as e:
             print(f'Error while checking chapters:\n{type(e).__name__}: {e}')
 
-    async def process_sub(self, sub):
+    async def _process_sub(self, sub):
         """Обработка одной подписки"""
 
         print(f'Начинаю проверку подписки:')
@@ -114,7 +114,12 @@ class SubHandler(commands.Cog):
                         chapter_info = await self.lib_api.get_chapter_info(work_info['site_id'], work_info['slug_url'], new_id)
 
                         for guild_sub in guild_subs:
-                            await self.send_notification(guild_sub, work_info, chapter_info, thumbnail_url)
+                            await self._send_notification(
+                                guild_sub,
+                                work_info,
+                                chapter_info,
+                                thumbnail_url,
+                            )
 
                         print(f"Notifications sent for chapter {new_id} to {len(guild_subs)} guilds")
                     except Exception as e:
@@ -134,7 +139,7 @@ class SubHandler(commands.Cog):
             print(f"Error processing subscription {sub['id']}:\n{type(e).__name__}: {e}")
             traceback.print_exc()
 
-    async def send_notification(self, guild_sub, work_info, chapter_info, thumbnail_url):
+    async def _send_notification(self, guild_sub, work_info, chapter_info, thumbnail_url, chapter_url):
         """Отправка уведомления на конкретный сервер"""
 
         try:
