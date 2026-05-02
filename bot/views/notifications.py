@@ -35,9 +35,13 @@ class ChapterNotificationView(DesignerView):
         )
 
     def _build_section(self) -> Section:
+        line = f"### Том {self._volume}, Глава {self._number}"
+        if self._chapter_name.strip():
+            line += f" — {self._chapter_name.strip()}"
+
         text = TextDisplay(
             f"## Вышла новая глава!\n"
-            f"### Том {self._volume}, Глава {self._number} — {self._chapter_name}\n"
+            f"{line}\n"
             f"{self._work_name}"
         )
 
