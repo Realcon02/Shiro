@@ -2,7 +2,7 @@
 .github
 .gitignore
 node_modules/
-venv/
+.venv/
 __pycache__/
 .env
 *.md

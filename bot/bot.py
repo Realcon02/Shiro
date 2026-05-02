@@ -6,8 +6,8 @@ from discord import Status
 from discord.ext import commands
 from dotenv import load_dotenv
 
-import config
-from .services import DatabaseManager, LibAPI
+from bot.services import DatabaseManager, LibAPI, DiscordUploader
+from config import PREFIXES, UPLOAD_CHANNEL_ID
 
 '''
 Есть три разновидности ботов:
@@ -22,7 +22,7 @@ from .services import DatabaseManager, LibAPI
 class Shiro(commands.Bot):
     def __init__(self):
         super().__init__(
-            command_prefix=commands.when_mentioned_or(*config.prefixes),
+            command_prefix=commands.when_mentioned_or(*PREFIXES),
             intents=discord.Intents.all(),
             status=Status.idle,
         )
@@ -30,16 +30,16 @@ class Shiro(commands.Bot):
         load_dotenv()
         self._TOKEN = os.getenv('BOT_TOKEN')
 
-        db_params = {
+        self._DB_PARAMS = {
             'host': os.getenv('POSTGRES_HOST'),
             'port': os.getenv('POSTGRES_PORT'),
             'database': os.getenv('POSTGRES_NAME'),
             'user': os.getenv('POSTGRES_USER'),
             'password': os.getenv('POSTGRES_PASSWORD')
         }
-        self._DB_PARAMS = db_params
         self.db: DatabaseManager | None = None
         self.lib_api: LibAPI | None = None
+        self.uploader: DiscordUploader = DiscordUploader(self, UPLOAD_CHANNEL_ID)
 
     async def setup(self):
         self.db = DatabaseManager()

@@ -1,3 +1,5 @@
+import asyncio
+
 from asyncpg import Connection, Pool, Record, create_pool
 
 
@@ -8,10 +10,27 @@ class DatabaseManager:
 
     async def initialize(self, db_params):
         """Создание пула соединений"""
-        self.pool = await create_pool(
-            min_size=1, max_size=8, **db_params
-        )
-        print('[INFO] Database pool initialized')
+        retries = 10
+        delay = 2
+
+        for attempt in range(1, retries + 1):
+            try:
+                self.pool = await create_pool(
+                    min_size=1,
+                    max_size=8,
+                    timeout=5,
+                    **db_params
+                )
+                print('[INFO] Database pool initialized')
+                return
+
+            except Exception as e:
+                print(f'[DB] Attempt {attempt}/{retries} failed: {e}')
+
+                if attempt == retries:
+                    raise
+
+                await asyncio.sleep(delay)
 
     async def close(self):
         """Закрытие пула соединений"""
@@ -99,17 +118,17 @@ class DatabaseManager:
     async def add_work(self, work_info: dict) -> None:
         """Добавление информации о произведении в БД"""
 
-        work_id, name, rus_name, slug_url = work_info.values()
+        work_id, site_id, name, rus_name, slug_url = work_info.values()
 
         conn: Connection
         async with self.pool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("""
                     INSERT INTO
-                    works(work_id, name, rus_name, slug_url)
-                    VALUES ($1, $2, $3, $4)
+                    works(work_id, site_id, name, rus_name, slug_url)
+                    VALUES ($1, $2, $3, $4, $5)
                     ON CONFLICT (work_id) DO NOTHING""",
-                    work_id, name, rus_name, slug_url
+                    work_id, site_id, name, rus_name, slug_url
                 )
 
     # Операции чтения
@@ -139,7 +158,7 @@ class DatabaseManager:
         conn: Connection
         async with self.pool.acquire() as conn:
             return await conn.fetchrow("""
-                SELECT name, rus_name, slug_url FROM works
+                SELECT site_id, name, rus_name, slug_url FROM works
                 WHERE work_id = $1""",
                 target_id
             )
@@ -166,6 +185,18 @@ class DatabaseManager:
                     s.id          AS sub_id,
                     s.target_type AS type,
                     sg.channel_id,
+                    CASE s.target_type
+                        WHEN 'works'          THEN w.site_id
+                        WHEN 'branches_works' THEN bw_work.site_id
+                        WHEN 'works_teams'    THEN wt_work.site_id
+                        -- teams: NULL по умолчанию, ELSE не нужен
+                    END AS site_id,
+                    CASE s.target_type
+                        WHEN 'works'          THEN w.slug_url
+                        WHEN 'teams'          THEN t.slug_url
+                        WHEN 'branches_works' THEN bw_work.slug_url
+                        WHEN 'works_teams'    THEN wt_work.slug_url
+                    END AS slug_url,
                     CASE s.target_type
                         WHEN 'works' THEN
                             COALESCE(w.rus_name, w.name)

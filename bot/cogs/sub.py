@@ -7,9 +7,10 @@ from discord.ext import commands
 from discord.ext.pages import Paginator
 
 from bot import Shiro
+from bot.core import SITES, SUB_TYPES
 from bot.services import DatabaseManager, LibAPI
-from bot.utils.embeds import build_sub_pages, TYPE_LABELS
 from bot.utils.formatters import truncate
+from bot.views import SubListView
 
 
 class Subscription(commands.Cog):
@@ -40,10 +41,7 @@ class Subscription(commands.Cog):
 
     @staticmethod
     async def get_suitable_channels_auto(ctx: AutocompleteContext):
-        """
-        Автозаполнение доступных каналов
-        НЕ ДОДЕЛАНА
-        """
+        """Автозаполнение доступных каналов"""
         guild = ctx.interaction.guild
         user = ctx.interaction.user
         channels = []
@@ -67,7 +65,7 @@ class Subscription(commands.Cog):
             records = await self.db.get_guild_subscriptions(ctx.interaction.guild_id)
             return [
                 OptionChoice(
-                    name=f"{TYPE_LABELS.get(str(r['type']), r['type'])}: {r['description'] or '—'}"[:100],
+                    name=truncate(f"{SUB_TYPES[r['type']].emoji}: {r['description'] or '—'}"),
                     value=r['sub_id']
                 )
                 for r in records
@@ -130,7 +128,7 @@ class Subscription(commands.Cog):
 
             sub_id = await self.db.get_sub_id('works', work_info['id'])
             if not sub_id:
-                newest_id_work = await self.lib_api.search_newest_id_chapter_work(work_info['slug_url'])
+                newest_id_work = await self.lib_api.search_newest_id_chapter_work(site, work_info['slug_url'])
                 await self.db.add_work(work_info)
 
                 sub_id = await self.db.create_sub('works', work_info['id'], newest_id_work)
@@ -157,33 +155,6 @@ class Subscription(commands.Cog):
             traceback.print_exc()
             if not ctx.response.is_done():
                 await ctx.respond('Произошла ошибка при обработке команды.', ephemeral=True)
-
-        # await ctx.send(f'> Информация:\n'
-        #                f'Сайт: {site}\n'
-        #                f'Произведение: {work}\n'
-        #                f'Канал: {channel.mention}\n'
-        #                f'ID работы: {id_work}\n'
-        #                f'URL слаг: {slug_url_work}\n'
-        #                f'ID подписки: {sub_id}')
-
-    # @subscription.command(name='add')
-    # @option('channel', channel_types=[ChannelType.text])
-    # @option('site', input_type=int, choices=)
-    # @option('type_sub', input_type=str, choices=['Team', 'Branch'])
-    # @option('title', input_type=str, autocomplete=get_titles_auto)
-    # @option('team_or_branch', input_type=int, autocomplete=get_team_or_branch_auto)
-    # async def add_sub(self,
-    #                   ctx: discord.ApplicationContext,
-    #                   channel: discord.TextChannel,
-    #                   site: int,
-    #                   type_sub: str,
-    #                   title: str,
-    #                   team_or_branch: int
-    #                   ):
-    #     if type_sub == 'Team':
-    #         last_chapter_id = search_last_chapter(title, team_or_branch)
-    #         sub_add_team(last_chapter_id)
-    #         await ctx.respond(f'{channel.mention}\n{site}\n{type_sub}\n{title}\n{team_or_branch}\n\n{last_chapter_id}')
 
     @subscription.command(
         name='delete',
@@ -220,9 +191,21 @@ class Subscription(commands.Cog):
             await ctx.respond('Ошибка при обращении к базе данных.', ephemeral=True)
             return
 
-        pages = build_sub_pages(records, ctx.guild.name)
-        paginator = Paginator(pages=pages)
-        await paginator.respond(ctx.interaction)
+        subs = []
+        for r in records:
+            sub_type = f"{SUB_TYPES[r['type']].emoji} {SUB_TYPES[r['type']].name}"
+
+            sub = {
+                'title': r['description'],
+                'url': f"{SITES.get(r['site_id'], 3).base_url}/ru/book/{r['slug_url']}",
+                'sub_type': sub_type,
+                'channel_id': r['channel_id']
+            }
+            subs.append(sub)
+
+        view = SubListView(subs, ctx.guild.name, ctx.author)
+
+        await ctx.respond(view=view)
 
 
 def setup(bot) -> None:
