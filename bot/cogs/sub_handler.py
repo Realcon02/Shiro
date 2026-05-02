@@ -9,7 +9,8 @@ from aiohttp import ClientConnectorError
 from discord.ext import commands, tasks
 
 from bot import Shiro
-from bot.services import DatabaseManager, LibAPI
+from bot.core import SITES
+from bot.services import DatabaseManager, LibAPI, DiscordUploader
 from bot.views import ChapterNotificationView
 from config import INTERVAL_CHECKING_NEW_CHAPTERS
 
@@ -18,12 +19,28 @@ if TYPE_CHECKING:
     from asyncpg import Record
 
 
+def _build_chapter_url(site_id, slug_url, volume, number, branch_id):
+    try:
+        base = SITES.get(site_id).base_url
+    except:
+        print(f"Unknown site_id: {site_id}")
+        return None
+
+    url = f"{base}/ru/{slug_url}/read/v{volume}/c{number}"
+
+    if branch_id:
+        url += f"?bid={branch_id}"
+
+    return url
+
+
 class SubHandler(commands.Cog):
     """Обработчик подписок"""
     def __init__(self, bot: Shiro) -> None:
         self.bot = bot
         self.lib_api: LibAPI = bot.lib_api
         self.db: DatabaseManager = bot.db
+        self.uploader: DiscordUploader = bot.uploader
 
         self.check_new_chapters_loop.start()
 
@@ -102,7 +119,7 @@ class SubHandler(commands.Cog):
             if new_ids:
                 print(f'Обнаружены новые главы: {new_ids}')
 
-                thumbnail_url = await self.bot.uploader.get_url_from_libapi(
+                thumbnail_url = await self.uploader.get_url_from_libapi(
                     self.lib_api,
                     work_info['slug_url'],
                     work_info['site_id'],
@@ -111,7 +128,18 @@ class SubHandler(commands.Cog):
                 # Последовательно обрабатываем каждую новую главу
                 for new_id in new_ids:
                     try:
-                        chapter_info = await self.lib_api.get_chapter_info(work_info['site_id'], work_info['slug_url'], new_id)
+                        chapter_info = await self.lib_api.get_chapter_info(
+                            work_info['site_id'],
+                            work_info['slug_url'],
+                            new_id,
+                        )
+                        chapter_url = _build_chapter_url(
+                            work_info['site_id'],
+                            work_info['slug_url'],
+                            chapter_info['volume'],
+                            chapter_info['number'],
+                            chapter_info['branch_id'],
+                        )
 
                         for guild_sub in guild_subs:
                             await self._send_notification(
@@ -119,6 +147,7 @@ class SubHandler(commands.Cog):
                                 work_info,
                                 chapter_info,
                                 thumbnail_url,
+                                chapter_url,
                             )
 
                         print(f"Notifications sent for chapter {new_id} to {len(guild_subs)} guilds")
@@ -147,9 +176,12 @@ class SubHandler(commands.Cog):
             if channel and isinstance(channel, discord.TextChannel):
                 # Создаем view с уведомлением
                 view = ChapterNotificationView(
-                    work_info,
-                    chapter_info,
+                    work_info['rus_name'] or work_info['name'],
+                    chapter_info['volume'],
+                    chapter_info['number'],
+                    chapter_info['name'],
                     thumbnail_url,
+                    chapter_url
                 )
                 await channel.send(view=view)
 

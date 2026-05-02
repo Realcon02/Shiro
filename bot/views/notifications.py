@@ -2,8 +2,6 @@ import discord
 from discord import ButtonStyle
 from discord.ui import DesignerView, Container, TextDisplay, ActionRow, Button, Section, Thumbnail
 
-from bot.core import SITES
-
 
 class ChapterNotificationView(DesignerView):
     """
@@ -11,11 +9,21 @@ class ChapterNotificationView(DesignerView):
     Принимает данные главы и строит макет через DesignerView.
     """
 
-    def __init__(self, work_info, chapter_info, thumbnail_url):
+    def __init__(self,
+                 work_name,
+                 volume,
+                 number,
+                 chapter_name,
+                 thumbnail_url,
+                 chapter_url):
         super().__init__(timeout=None)
-        self._work = work_info
-        self._chapter = chapter_info
+
+        self._work_name = work_name
+        self._volume = volume
+        self._number = number
+        self._chapter_name = chapter_name
         self._cover = thumbnail_url
+        self._url = chapter_url
 
         self.add_item(self._build_container())
 
@@ -29,33 +37,19 @@ class ChapterNotificationView(DesignerView):
     def _build_section(self) -> Section:
         text = TextDisplay(
             f"## Вышла новая глава!\n"
-            f"### Том {self._chapter['volume']}, глава {self._chapter['number']} — «{self._chapter['name']}»\n"
-            f"{self._work['rus_name'] or self._work['name']}"
+            f"### Том {self._volume}, Глава {self._number} — {self._chapter_name}\n"
+            f"{self._work_name}"
         )
 
         thumbnail = Thumbnail(url=self._cover)
 
         return Section(text, accessory=thumbnail)
 
-    def _build_chapter_url(self):
-        try:
-            base = SITES.get(self._work['site_id']).base_url
-        except:
-            print(f"Unknown site_id: {self._work['site_id']}")
-            return None
-
-        url = f"{base}/ru/{self._work['slug_url']}/read/v{self._chapter['volume']}/c{self._chapter['number']}"
-
-        if self._chapter.get("branch_id"):
-            url += f"?bid={self._chapter['branch_id']}"
-
-        return url
-
     def _build_actions(self) -> ActionRow:
         return ActionRow(
             Button(
                 label="Читать",
-                url=self._build_chapter_url(),
+                url=self._url,
                 style=ButtonStyle.link,
                 emoji="📖",
             )
