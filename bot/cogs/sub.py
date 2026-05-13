@@ -1,10 +1,10 @@
+import re
 import traceback
 
 import discord
 from aiohttp import ClientConnectorError, ServerDisconnectedError
 from discord import AutocompleteContext, OptionChoice, option
 from discord.ext import commands
-from discord.ext.pages import Paginator
 
 from bot import Shiro
 from bot.core import SITES, SUB_TYPES
@@ -30,7 +30,16 @@ class Subscription(commands.Cog):
                 return []
 
             works: list = await self.lib_api.search_works(site, title)
-            return [truncate(w['rus_name'] or w['name']) for w in works[:25]]
+
+            results: list[OptionChoice] = []
+            for w in works[:25]:
+                display_name = w['rus_name'] or w['name']
+                results.append(OptionChoice(
+                    name=truncate(display_name),
+                    value=f"{w['id']}::{truncate(display_name, 100 - len(str(w['id'])) - 2)}"
+                ))
+
+            return results
 
         except (ClientConnectorError, ServerDisconnectedError, OSError) as e:
             print(f'[WARN] Network error in autocomplete: {type(e).__name__}')
@@ -118,13 +127,25 @@ class Subscription(commands.Cog):
             channel = ctx.guild.get_channel(int(channel.removeprefix('ch_')))
         except ValueError:
             await ctx.respond(
-                'Канал не найдено. Воспользуйтесь автодополнением и выберите вариант из списка.',
+                'Канал не найден. Воспользуйтесь автодополнением и выберите вариант из списка.',
                 ephemeral=True
             )
             return
 
+        match = re.fullmatch(r'(\d+)::(.+)', work)
+
+        if not match:
+            await ctx.respond(
+                'Пожалуйста, выберите произведение из списка автодополнения.',
+                ephemeral=True
+            )
+            return
+
+        work_id = int(match.group(1))
+        title = match.group(2)
+
         try:
-            work_info = await self.lib_api.search_work(site, work.rstrip('...'))
+            work_info = await self.lib_api.search_work(site, work_id, title.removesuffix('...'))
 
             sub_id = await self.db.get_sub_id('works', work_info['id'])
             if not sub_id:
@@ -141,6 +162,7 @@ class Subscription(commands.Cog):
                 await ctx.respond('Данная подписка уже есть на этом сервере')
 
         except IndexError:
+            traceback.print_exc()
             await ctx.respond(
                 'Произведение не найдено. Воспользуйтесь автодополнением и выберите вариант из списка.',
                 ephemeral=True
