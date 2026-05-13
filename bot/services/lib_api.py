@@ -91,8 +91,8 @@ class LibAPI:
 
         return searched_id
 
-    async def search_work(self, site_id: int, searched_work: str) -> dict:
-        """Ищет произведение по названию и возвращает информацию о нём"""
+    async def search_work(self, site_id: int, work_id: int, searched_work: str) -> dict:
+        """Ищет произведение по названию и ID, возвращает информацию о нём"""
 
         site = _get_site(site_id)
 
@@ -105,20 +105,24 @@ class LibAPI:
         async with self.session.get(url=url, params=params, headers=headers) as resp:
             works: list = (await resp.json())['data']
 
-            work = works[0]
-            if len(works) > 1:
-                print(f'get_work_info: Найдено несколько произведений по запросу \'{searched_work}\'\n'
-                      f'Выбрано 1-е найденное произведение: \'{work}\'')
+            work = next(
+                (w for w in works if w['id'] == work_id),
+                None
+            )
 
-            work_info = {
+            if work is None:
+                raise IndexError(
+                    f'Произведение с ID {work_id} не найдено '
+                    f'среди результатов поиска "{searched_work}"'
+                )
+
+            return {
                 'id': work['id'],
                 'site_id': site_id,
                 'name': work['name'],
                 'rus_name': work['rus_name'] or None,
                 'slug_url': work['slug_url']
             }
-
-        return work_info
 
     # Функции извлечения информации
     async def get_chapter_info(self, site_id: int, slug_url_work: str, chapter_id: int) -> dict:
