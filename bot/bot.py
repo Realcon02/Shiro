@@ -39,7 +39,7 @@ class Shiro(commands.Bot):
         }
         self.db: DatabaseManager | None = None
         self.lib_api: LibAPI | None = None
-        self.uploader: DiscordUploader = DiscordUploader(self, int(os.getenv('UPLOAD_CHANNEL_ID')))
+        self.uploader: DiscordUploader | None = None
 
     async def setup(self):
         self.db = DatabaseManager()
@@ -47,6 +47,9 @@ class Shiro(commands.Bot):
 
         self.lib_api = LibAPI()
         await self.lib_api.initialize()
+
+        self.uploader = DiscordUploader(self, int(os.getenv('UPLOAD_CHANNEL_ID')))
+        await self.uploader.initialize()
 
         for file in os.listdir(f'{os.path.realpath(os.path.dirname(__file__))}/cogs'):
             if file.endswith('.py'):
@@ -72,6 +75,8 @@ class Shiro(commands.Bot):
             await self.db.close()
         if self.lib_api:
             await self.lib_api.close()
+        if self.uploader:
+            await self.uploader.close()
 
         await asyncio.sleep(0.3)
 
