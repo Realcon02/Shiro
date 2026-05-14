@@ -1,9 +1,10 @@
 from io import BytesIO
 
-from discord import TextChannel, File
+from discord import TextChannel, File, Forbidden, HTTPException
 from aiohttp import ClientSession, ClientTimeout
 
 from bot.services import LibAPI
+from bot.exceptions import UploaderChannelNotFound, UploaderPermissionError
 
 
 class DiscordUploader:
@@ -53,10 +54,34 @@ class DiscordUploader:
         channel = self.bot.get_channel(self.channel_id)
 
         if not channel or not isinstance(channel, TextChannel):
-            raise RuntimeError("Upload channel not found or invalid")
+            raise UploaderChannelNotFound(
+                f"Upload channel {self.channel_id} not found or is not a TextChannel"
+            )
+
+        # Проверяем права до отправки
+        perms = channel.permissions_for(channel.guild.me)
+        if not (perms.view_channel and perms.send_messages and perms.attach_files):
+            missing = [
+                name for name, ok in {
+                    'view_channel': perms.view_channel,
+                    'send_messages': perms.send_messages,
+                    'attach_files': perms.attach_files,
+                }.items() if not ok
+            ]
+            raise UploaderPermissionError(
+                f"Missing permissions in upload channel {self.channel_id}: {', '.join(missing)}"
+            )
 
         file = File(BytesIO(file_bytes), filename=filename)
-        msg = await channel.send(file=file)
+
+        try:
+            msg = await channel.send(file=file)
+        except Forbidden as e:
+            raise UploaderPermissionError(
+                f"Discord rejected file upload to channel {self.channel_id}"
+            ) from e
+        except HTTPException as e:
+            raise RuntimeError(f"Discord API error during file upload: {e}") from e
 
         if not msg.attachments:
             raise RuntimeError("Discord did not return attachment URL")
