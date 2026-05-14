@@ -10,6 +10,7 @@ from discord.ext import commands, tasks
 
 from bot import Shiro
 from bot.core import SITES
+from bot.exceptions import UploaderError
 from bot.services import DatabaseManager, LibAPI, DiscordUploader
 from bot.views import ChapterNotificationView
 from config import INTERVAL_CHECKING_NEW_CHAPTERS
@@ -119,11 +120,16 @@ class SubHandler(commands.Cog):
             if new_ids:
                 print(f'Обнаружены новые главы: {new_ids}')
 
-                thumbnail_url = await self.uploader.get_url_from_libapi(
-                    self.lib_api,
-                    work_info['slug_url'],
-                    work_info['site_id'],
-                )
+                try:
+                    thumbnail_url = await self.uploader.get_url_from_libapi(
+                        self.lib_api,
+                        work_info['slug_url'],
+                        work_info['site_id'],
+                    )
+                except UploaderError as e:
+                    print(f"[CRITICAL] Uploader misconfigured, skipping all notifications "
+                          f"for sub {sub['id']}:\n{type(e).__name__}: {e}")
+                    return
 
                 # Последовательно обрабатываем каждую новую главу
                 for new_id in new_ids:
@@ -165,32 +171,42 @@ class SubHandler(commands.Cog):
             traceback.print_exc()
             return
         except Exception as e:
-            print(f"Error processing subscription {sub['id']}:\n{type(e).__name__}: {e}")
+            print(f"Error processing subscription {sub['id']}:\n"
+                  f"{type(e).__name__}: {e}")
             traceback.print_exc()
 
     async def _send_notification(self, guild_sub, work_info, chapter_info, thumbnail_url, chapter_url):
         """Отправка уведомления на конкретный сервер"""
 
+        channel = self.bot.get_channel(guild_sub['channel_id'])
+
+        if not channel or not isinstance(channel, discord.TextChannel):
+            print(f"[WARN] Notification channel {guild_sub['channel_id']} "
+                  f"not found for guild {guild_sub['guild_id']}")
+            return
+
         try:
-            channel = self.bot.get_channel(guild_sub['channel_id'])
-            if channel and isinstance(channel, discord.TextChannel):
-                # Создаем view с уведомлением
-                view = ChapterNotificationView(
-                    work_info['rus_name'] or work_info['name'],
-                    chapter_info['volume'],
-                    chapter_info['number'],
-                    chapter_info['name'],
-                    thumbnail_url,
-                    chapter_url
-                )
-                await channel.send(view=view)
+            view = ChapterNotificationView(
+                work_info['rus_name'] or work_info['name'],
+                chapter_info['volume'],
+                chapter_info['number'],
+                chapter_info['name'],
+                thumbnail_url,
+                chapter_url
+            )
+            await channel.send(view=view)
 
-                print(f'Было отправлено уведомление на:\n'
-                      f'  Сервер: {guild_sub['guild_id']}\n'
-                      f'  Канал:  {guild_sub['channel_id']}')
+            print(f"Было отправлено уведомление на:\n"
+                  f"  Сервер: {guild_sub['guild_id']}\n"
+                  f"  Канал:  {guild_sub['channel_id']}")
 
+        except discord.Forbidden:
+            print(f"[WARN] No permission to send notification "
+                  f"to channel {guild_sub['channel_id']} "
+                  f"in guild {guild_sub['guild_id']}")
         except Exception as e:
-            print(f"Error sending a notification to the channel {guild_sub['channel_id']}:\n{type(e).__name__}: {e}")
+            print(f"Error sending a notification to the channel {guild_sub['channel_id']}:\n"
+                  f"{type(e).__name__}: {e}")
 
 
 def setup(bot) -> None:
