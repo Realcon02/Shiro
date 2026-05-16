@@ -25,6 +25,7 @@ class Shiro(commands.Bot):
             command_prefix=commands.when_mentioned_or(*PREFIXES),
             intents=discord.Intents.all(),
             status=Status.idle,
+            cache_app_emojis=True,
         )
 
         load_dotenv()
@@ -81,6 +82,10 @@ class Shiro(commands.Bot):
         await asyncio.sleep(0.3)
 
         await super().close()
+
+    async def get_app_emoji(self, name: str) -> discord.AppEmoji | None:
+        """Получить эмодзи приложения по имени."""
+        return next((e for e in self.app_emojis if e.name == name), None)
 
     async def on_ready(self):
         await self.change_presence(status=Status.online)
