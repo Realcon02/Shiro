@@ -216,12 +216,14 @@ class Subscription(commands.Cog):
         subs = []
         for r in records:
             sub_type = f"{SUB_TYPES[r['type']].emoji} {SUB_TYPES[r['type']].name}"
+            site_icon_emoji = await self.bot.get_app_emoji(SITES[r['site_id']].emoji_name)
 
             sub = {
                 'title': r['description'],
                 'url': f"{SITES.get(r['site_id'], 3).base_url}/ru/book/{r['slug_url']}",
                 'sub_type': sub_type,
-                'channel_id': r['channel_id']
+                'channel_id': r['channel_id'],
+                'site_icon': site_icon_emoji
             }
             subs.append(sub)
 

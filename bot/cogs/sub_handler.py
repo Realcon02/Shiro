@@ -192,7 +192,8 @@ class SubHandler(commands.Cog):
                 chapter_info['number'],
                 chapter_info['name'],
                 thumbnail_url,
-                chapter_url
+                chapter_url,
+                await self.bot.get_app_emoji(SITES[work_info['site_id']].emoji_name),
             )
             await channel.send(view=view)
 

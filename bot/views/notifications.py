@@ -1,5 +1,5 @@
 import discord
-from discord import ButtonStyle
+from discord import ButtonStyle, AppEmoji
 from discord.ui import DesignerView, Container, TextDisplay, ActionRow, Button, Section, Thumbnail
 
 
@@ -10,12 +10,13 @@ class ChapterNotificationView(DesignerView):
     """
 
     def __init__(self,
-                 work_name,
-                 volume,
-                 number,
-                 chapter_name,
-                 thumbnail_url,
-                 chapter_url):
+                 work_name: str,
+                 volume: int,
+                 number: int,
+                 chapter_name: str,
+                 thumbnail_url: str,
+                 chapter_url: str,
+                 site_icon: AppEmoji) -> None:
         super().__init__(timeout=None)
 
         self._work_name = work_name
@@ -24,6 +25,7 @@ class ChapterNotificationView(DesignerView):
         self._chapter_name = chapter_name
         self._cover = thumbnail_url
         self._url = chapter_url
+        self._icon = site_icon
 
         self.add_item(self._build_container())
 
@@ -55,6 +57,6 @@ class ChapterNotificationView(DesignerView):
                 label="Читать",
                 url=self._url,
                 style=ButtonStyle.link,
-                emoji="📖",
+                emoji=self._icon or "📖",
             )
         )

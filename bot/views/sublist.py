@@ -9,6 +9,7 @@ class SubItem:
         self._url = item['url']
         self._sub_type = item['sub_type']
         self._channel_id = item['channel_id']
+        self._icon = item['site_icon']
 
     def build(self) -> Section:
         text = TextDisplay(
@@ -20,7 +21,7 @@ class SubItem:
             label="Перейти",
             url=self._url,
             style=ButtonStyle.link,
-            emoji="📖",
+            emoji=self._icon or "📖",
         )
 
         return Section(text, accessory=button)
