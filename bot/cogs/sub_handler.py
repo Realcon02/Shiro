@@ -2,22 +2,17 @@ import asyncio
 import random
 import traceback
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING
 
 import discord
 from aiohttp import ClientConnectorError
 from discord.ext import commands, tasks
 
 from bot import Shiro
-from bot.core import SITES
+from bot.core import SITES, Subscription, WorkInfo, GuildSub, ChapterInfo
 from bot.exceptions import UploaderError
 from bot.services import DatabaseManager, LibAPI, DiscordUploader
 from bot.views import ChapterNotificationView
 from config import INTERVAL_CHECKING_NEW_CHAPTERS
-
-# Импорт только для проверки типов (не выполняется при запуске)
-if TYPE_CHECKING:
-    from asyncpg import Record
 
 
 def _build_chapter_url(site_id, slug_url, volume, number, branch_id):
@@ -81,34 +76,34 @@ class SubHandler(commands.Cog):
         except Exception as e:
             print(f'Error while checking chapters:\n{type(e).__name__}: {e}')
 
-    async def _process_sub(self, sub):
+    async def _process_sub(self, sub: Subscription):
         """Обработка одной подписки"""
 
         print(f'Начинаю проверку подписки:')
-        print(f'({", ".join(map(str, sub.values()))})')
+        print(f'({sub.id}, {sub.target_type}, {sub.target_id}, {sub.newest_id_chapter})')
 
         try:
-            guild_subs = await self.db.get_guilds_for_sub(sub['id'])
+            guild_subs = await self.db.get_guilds_for_sub(sub.id)
             if not guild_subs:
-                print(f"Sub {sub['id']} has no guilds, removing...")
-                await self.db.delete_orphan_sub(sub['id'])
+                print(f"Sub {sub.id} has no guilds, removing...")
+                await self.db.delete_orphan_sub(sub.id)
                 return
 
-            work_info: Record | None = None
+            work_info: WorkInfo | None = None
             new_ids = []
 
-            match sub['target_type']:
+            match sub.target_type:
                 case 'works':
-                    work_info = await self.db.get_work_info(sub['target_id'])
+                    work_info = await self.db.get_work_info(sub.target_id)
 
                     if not work_info:
-                        print(f"Warning: Work info not found for sub {sub['id']}")
+                        print(f"Warning: Work info not found for sub {sub.id}")
                         return
 
                     new_ids = await self.lib_api.get_new_chapter_ids_work(
-                        work_info['site_id'],
-                        work_info['slug_url'],
-                        sub['newest_id_chapter'],
+                        work_info.site_id,
+                        work_info.slug_url,
+                        sub.newest_id_chapter,
                     )
                 case 'teams':
                     pass
@@ -123,28 +118,28 @@ class SubHandler(commands.Cog):
                 try:
                     thumbnail_url = await self.uploader.get_url_from_libapi(
                         self.lib_api,
-                        work_info['slug_url'],
-                        work_info['site_id'],
+                        work_info.slug_url,
+                        work_info.site_id,
                     )
                 except UploaderError as e:
                     print(f"[CRITICAL] Uploader misconfigured, skipping all notifications "
-                          f"for sub {sub['id']}:\n{type(e).__name__}: {e}")
+                          f"for sub {sub.id}:\n{type(e).__name__}: {e}")
                     return
 
                 # Последовательно обрабатываем каждую новую главу
                 for new_id in new_ids:
                     try:
                         chapter_info = await self.lib_api.get_chapter_info(
-                            work_info['site_id'],
-                            work_info['slug_url'],
+                            work_info.site_id,
+                            work_info.slug_url,
                             new_id,
                         )
                         chapter_url = _build_chapter_url(
-                            work_info['site_id'],
-                            work_info['slug_url'],
-                            chapter_info['volume'],
-                            chapter_info['number'],
-                            chapter_info['branch_id'],
+                            work_info.site_id,
+                            work_info.slug_url,
+                            chapter_info.volume,
+                            chapter_info.number,
+                            chapter_info.branch_id,
                         )
 
                         for guild_sub in guild_subs:
@@ -158,55 +153,55 @@ class SubHandler(commands.Cog):
 
                         print(f"Notifications sent for chapter {new_id} to {len(guild_subs)} guilds")
                     except Exception as e:
-                        print(f"Error processing chapter {new_id} for sub {sub['id']}:\n{type(e).__name__}: {e}")
+                        print(f"Error processing chapter {new_id} for sub {sub.id}:\n{type(e).__name__}: {e}")
                         traceback.print_exc()
 
                 # Обновляем ID последней главы в БД
-                await self.db.update_sub(sub['id'], max(new_ids))
+                await self.db.update_sub(sub.id, max(new_ids))
 
             else:
                 print('Новых глав не обнаружено')
         except ClientConnectorError as e:
-            print(f"Network error for sub {sub['id']}:\n{type(e).__name__}: {e}")
+            print(f"Network error for sub {sub.id}:\n{type(e).__name__}: {e}")
             traceback.print_exc()
             return
         except Exception as e:
-            print(f"Error processing subscription {sub['id']}:\n"
+            print(f"Error processing subscription {sub.id}:\n"
                   f"{type(e).__name__}: {e}")
             traceback.print_exc()
 
-    async def _send_notification(self, guild_sub, work_info, chapter_info, thumbnail_url, chapter_url):
+    async def _send_notification(self, guild_sub: GuildSub, work_info: WorkInfo, chapter_info: ChapterInfo, thumbnail_url, chapter_url):
         """Отправка уведомления на конкретный сервер"""
 
-        channel = self.bot.get_channel(guild_sub['channel_id'])
+        channel = self.bot.get_channel(guild_sub.channel_id)
 
         if not channel or not isinstance(channel, discord.TextChannel):
-            print(f"[WARN] Notification channel {guild_sub['channel_id']} "
-                  f"not found for guild {guild_sub['guild_id']}")
+            print(f"[WARN] Notification channel {guild_sub.channel_id} "
+                  f"not found for guild {guild_sub.guild_id}")
             return
 
         try:
             view = ChapterNotificationView(
-                work_info['rus_name'] or work_info['name'],
-                chapter_info['volume'],
-                chapter_info['number'],
-                chapter_info['name'],
+                work_info.rus_name or work_info.name,
+                chapter_info.volume,
+                chapter_info.number,
+                chapter_info.name,
                 thumbnail_url,
                 chapter_url,
-                await self.bot.get_app_emoji(SITES[work_info['site_id']].emoji_name),
+                await self.bot.get_app_emoji(SITES[work_info.site_id].emoji_name),
             )
             await channel.send(view=view)
 
             print(f"Было отправлено уведомление на:\n"
-                  f"  Сервер: {guild_sub['guild_id']}\n"
-                  f"  Канал:  {guild_sub['channel_id']}")
+                  f"  Сервер: {guild_sub.guild_id}\n"
+                  f"  Канал:  {guild_sub.channel_id}")
 
         except discord.Forbidden:
             print(f"[WARN] No permission to send notification "
-                  f"to channel {guild_sub['channel_id']} "
-                  f"in guild {guild_sub['guild_id']}")
+                  f"to channel {guild_sub.channel_id} "
+                  f"in guild {guild_sub.guild_id}")
         except Exception as e:
-            print(f"Error sending a notification to the channel {guild_sub['channel_id']}:\n"
+            print(f"Error sending a notification to the channel {guild_sub.channel_id}:\n"
                   f"{type(e).__name__}: {e}")
 
 

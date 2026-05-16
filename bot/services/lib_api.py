@@ -1,8 +1,7 @@
 from aiohttp import ClientSession, ClientTimeout, ClientConnectorError, ServerDisconnectedError
 from aiohttp_retry import RetryClient, ExponentialRetry
 
-from bot.core import SITES
-from bot.utils.formatters import truncate
+from bot.core import SITES, ChapterInfo, WorkSearchResult
 
 
 def _get_site(site_id: int):
@@ -57,7 +56,7 @@ class LibAPI:
             print('[INFO] Session closed')
 
     # Функции поиска
-    async def search_works(self, site_id: int, searched_work: str) -> list[str]:
+    async def search_works(self, site_id: int, searched_work: str) -> list[WorkSearchResult]:
         site = _get_site(site_id)
 
         url = _api(site.api_url, 'manga')
@@ -69,12 +68,16 @@ class LibAPI:
         async with self.session.get(url=url, params=params, headers=headers) as resp:
             works: list = (await resp.json())['data']
 
-            total = []
-            for work in works:
-                name_work: str = work['rus_name'] or work['name']
-                total.append(truncate(name_work))
-
-        return works
+            return [
+                WorkSearchResult(
+                    id=w['id'],
+                    site_id=site_id,
+                    name=w['name'],
+                    rus_name=w['rus_name'] or None,
+                    slug_url=w['slug_url'],
+                )
+                for w in works
+            ]
 
     async def search_newest_id_chapter_work(self, site_id: int, slug_url_work: str):
         site = _get_site(site_id)
@@ -91,7 +94,7 @@ class LibAPI:
 
         return searched_id
 
-    async def search_work(self, site_id: int, work_id: int, searched_work: str) -> dict:
+    async def search_work(self, site_id: int, work_id: int, searched_work: str) -> WorkSearchResult:
         """Ищет произведение по названию и ID, возвращает информацию о нём"""
 
         site = _get_site(site_id)
@@ -116,27 +119,24 @@ class LibAPI:
                     f'среди результатов поиска "{searched_work}"'
                 )
 
-            return {
-                'id': work['id'],
-                'site_id': site_id,
-                'name': work['name'],
-                'rus_name': work['rus_name'] or None,
-                'slug_url': work['slug_url']
-            }
+            return WorkSearchResult(
+                id=work['id'],
+                site_id=site_id,
+                name=work['name'],
+                rus_name=work['rus_name'] or None,
+                slug_url=work['slug_url'],
+            )
 
     # Функции извлечения информации
-    async def get_chapter_info(self, site_id: int, slug_url_work: str, chapter_id: int) -> dict:
+    async def get_chapter_info(self, site_id: int, slug_url_work: str, chapter_id: int) -> ChapterInfo:
         """Возвращает том, номер и название запрошенной главы, а также id ветки, в которой находится глава"""
 
-        chapter_info = {
-            'volume': '',
-            'number': '',
-            'name': '',
-            'branch_id': '',
-        }
-        branch_id: str | None = None
         site = _get_site(site_id)
         headers = site.headers
+
+        volume = ''
+        number = ''
+        branch_id: str | None = None
 
         url = _api(site.api_url, f'manga/{slug_url_work}/chapters')
         async with self.session.get(url=url, headers=headers) as resp:
@@ -145,27 +145,31 @@ class LibAPI:
             for chapter in chapters:
                 for branch in chapter['branches']:
                     if branch['id'] == chapter_id:
-                        chapter_info['volume'] = chapter['volume']
-                        chapter_info['number'] = chapter['number']
+                        volume = chapter['volume']
+                        number = chapter['number']
                         branch_id = branch['branch_id']
                         break
-                else: continue
+                else:
+                    continue
                 break
 
         url = _api(site.api_url, f'manga/{slug_url_work}/chapter')
         params = {
-            'number': chapter_info['number'],
-            'volume': chapter_info['volume']
+            'number': number,
+            'volume': volume
         }
         if branch_id:
-            chapter_info['branch_id'] = branch_id
             params['branch_id'] = branch_id
 
         async with self.session.get(url=url, params=params, headers=headers) as resp:
             name = (await resp.json())['data']['name']
-            chapter_info['name'] = name
 
-        return chapter_info
+        return ChapterInfo(
+            volume=volume,
+            number=number,
+            name=name,
+            branch_id=branch_id,
+        )
 
     async def get_new_chapter_ids_work(self, site_id: int, slug_url_work: str, old_chapter_id: int) -> list[int]:
         """Возвращает IDs глав для подписки типа «Тайтл»"""

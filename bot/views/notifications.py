@@ -11,8 +11,8 @@ class ChapterNotificationView(DesignerView):
 
     def __init__(self,
                  work_name: str,
-                 volume: int,
-                 number: int,
+                 volume: str,
+                 number: str,
                  chapter_name: str,
                  thumbnail_url: str,
                  chapter_url: str,
@@ -56,7 +56,7 @@ class ChapterNotificationView(DesignerView):
             Button(
                 label="Читать",
                 url=self._url,
-                style=ButtonStyle.link,
+                style=ButtonStyle.link,  # noqa
                 emoji=self._icon or "📖",
             )
         )

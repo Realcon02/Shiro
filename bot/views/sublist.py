@@ -2,14 +2,16 @@ import discord
 from discord import ButtonStyle
 from discord.ui import DesignerView, Container, TextDisplay, ActionRow, Button, Section, Separator
 
+from bot.core import SubListItem
+
 
 class SubItem:
-    def __init__(self, item):
-        self._title = item['title']
-        self._url = item['url']
-        self._sub_type = item['sub_type']
-        self._channel_id = item['channel_id']
-        self._icon = item['site_icon']
+    def __init__(self, item: SubListItem):
+        self._title = item.title
+        self._url = item.url
+        self._sub_type = item.sub_type
+        self._channel_id = item.channel_id
+        self._icon = item.site_icon
 
     def build(self) -> Section:
         text = TextDisplay(
@@ -20,7 +22,7 @@ class SubItem:
         button = Button(
             label="Перейти",
             url=self._url,
-            style=ButtonStyle.link,
+            style=ButtonStyle.link,  # noqa
             emoji=self._icon or "📖",
         )
 
@@ -28,7 +30,7 @@ class SubItem:
 
 
 class SubListView(DesignerView):
-    def __init__(self, subs, guild_name: str, author: discord.User | discord.Member):
+    def __init__(self, subs: list[SubListItem], guild_name: str, author: discord.User | discord.Member):
         super().__init__(timeout=180.0)
         self._subs = subs
         self._guild_name = guild_name

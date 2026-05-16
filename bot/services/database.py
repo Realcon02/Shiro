@@ -1,6 +1,8 @@
 import asyncio
 
-from asyncpg import Connection, Pool, Record, create_pool
+from asyncpg import Connection, Pool, create_pool
+
+from bot.core import WorkInfo, SubRecord, Subscription, WorkSearchResult, GuildSub
 
 
 class DatabaseManager:
@@ -15,7 +17,7 @@ class DatabaseManager:
 
         for attempt in range(1, retries + 1):
             try:
-                self.pool = await create_pool(
+                self.pool = await create_pool(  # noqa
                     min_size=1,
                     max_size=8,
                     timeout=5,
@@ -50,9 +52,8 @@ class DatabaseManager:
                     INSERT INTO
                     subscriptions(target_type, target_id, newest_id_chapter)
                     VALUES ($1, $2, $3)
-                    RETURNING id""",
-                    target_type, target_id, newest_id_chapter
-                )
+                    RETURNING id
+                """, target_type, target_id, newest_id_chapter)
 
     async def add_sub_to_guild(self, sub_id: int, guild_id: int, channel_id: int):
         """Добавление подписки на сервер"""
@@ -64,9 +65,8 @@ class DatabaseManager:
                     INSERT INTO
                     subscriptions_guilds(subscription_id, guild_id, channel_id)
                     VALUES ($1, $2, $3)
-                    ON CONFLICT (subscription_id, guild_id) DO NOTHING""",
-                    sub_id, guild_id, channel_id
-                )
+                    ON CONFLICT (subscription_id, guild_id) DO NOTHING
+                """, sub_id, guild_id, channel_id)
 
     async def update_sub(self, sub_id: int, newest_chapter_id: int):
         """Обновление подписки, т.е. обновление ID новейшей главы"""
@@ -88,9 +88,8 @@ class DatabaseManager:
             return await conn.fetchval("""
                 SELECT EXISTS
                 (SELECT 1 FROM subscriptions_guilds
-                WHERE subscription_id = $1 AND guild_id = $2)""",
-                sub_id, guild_id
-            )
+                WHERE subscription_id = $1 AND guild_id = $2)
+            """, sub_id, guild_id)
 
     async def remove_sub_from_guild(self, sub_id: int, guild_id: int) -> bool:
         """Удаляет подписку с сервера. Возвращает True, если запись была удалена."""
@@ -115,10 +114,8 @@ class DatabaseManager:
                 """, sub_id)
 
     # Операции с метаданными
-    async def add_work(self, work_info: dict) -> None:
+    async def add_work(self, work: WorkSearchResult) -> None:
         """Добавление информации о произведении в БД"""
-
-        work_id, site_id, name, rus_name, slug_url = work_info.values()
 
         conn: Connection
         async with self.pool.acquire() as conn:
@@ -127,19 +124,17 @@ class DatabaseManager:
                     INSERT INTO
                     works(work_id, site_id, name, rus_name, slug_url)
                     VALUES ($1, $2, $3, $4, $5)
-                    ON CONFLICT (work_id) DO NOTHING""",
-                    work_id, site_id, name, rus_name, slug_url
-                )
+                    ON CONFLICT (work_id) DO NOTHING
+                """, work.id, work.site_id, work.name, work.rus_name, work.slug_url)
 
     # Операции чтения
-    async def get_all_subscriptions(self) -> list[Record]:
+    async def get_all_subscriptions(self) -> list[Subscription]:
         """Получение всех подписок"""
 
         conn: Connection
         async with self.pool.acquire() as conn:
-            return await conn.fetch("""
-                SELECT * FROM subscriptions
-            """)
+            rows = await conn.fetch("SELECT * FROM subscriptions")
+            return [Subscription(**row) for row in rows]
 
     async def get_sub_id(self, target_type: str, target_id: int) -> int | None:
         """Получение ID подписки, если она существует"""
@@ -148,41 +143,41 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             return await conn.fetchval("""
                 SELECT id FROM subscriptions
-                WHERE target_type = $1 AND target_id = $2""",
-                target_type, target_id
-            )
+                WHERE target_type = $1 AND target_id = $2
+            """, target_type, target_id)
 
-    async def get_work_info(self, target_id: int) -> Record:
+    async def get_work_info(self, target_id: int) -> WorkInfo | None:
         """Получение информации о произведении"""
 
         conn: Connection
         async with self.pool.acquire() as conn:
-            return await conn.fetchrow("""
+            row = await conn.fetchrow("""
                 SELECT site_id, name, rus_name, slug_url FROM works
-                WHERE work_id = $1""",
-                target_id
-            )
+                WHERE work_id = $1
+            """, target_id)
+            return WorkInfo(**row) if row else None
 
-    async def get_guilds_for_sub(self, sub_id: int) -> list[Record]:
+    async def get_guilds_for_sub(self, sub_id: int) -> list[GuildSub]:
         """Возвращает список серверов, имеющих данную подписку"""
 
         conn: Connection
         async with self.pool.acquire() as conn:
-            return await conn.fetch("""
+            rows = await conn.fetch("""
                 SELECT guild_id, channel_id FROM subscriptions_guilds
                 WHERE subscription_id = $1
             """, sub_id)
+            return [GuildSub(**row) for row in rows]
 
-    async def get_guild_subscriptions(self, guild_id: int) -> list[Record]:
+    async def get_guild_subscriptions(self, guild_id: int) -> list[SubRecord]:
         """
         Получение всех подписок сервера с человекочитаемым описанием.
         Один JOIN-запрос покрывает все 4 типа подписки.
         """
         conn: Connection
         async with self.pool.acquire() as conn:
-            return await conn.fetch("""
+            rows = await conn.fetch("""
                 SELECT
-                    s.id          AS sub_id,
+                    s.id,
                     s.target_type AS type,
                     sg.channel_id,
                     CASE s.target_type
@@ -237,3 +232,4 @@ class DatabaseManager:
                 WHERE sg.guild_id = $1
                 ORDER BY s.target_type, s.id
             """, guild_id)
+            return [SubRecord(**row) for row in rows]

@@ -7,7 +7,7 @@ from discord import AutocompleteContext, OptionChoice, option
 from discord.ext import commands
 
 from bot import Shiro
-from bot.core import SITES, SUB_TYPES
+from bot.core import SITES, SUB_TYPES, SubListItem
 from bot.services import DatabaseManager, LibAPI
 from bot.utils.formatters import truncate
 from bot.views import SubListView
@@ -29,14 +29,14 @@ class Subscription(commands.Cog):
             if not title:
                 return []
 
-            works: list = await self.lib_api.search_works(site, title)
+            works = await self.lib_api.search_works(site, title)
 
             results: list[OptionChoice] = []
             for w in works[:25]:
-                display_name = w['rus_name'] or w['name']
+                display_name = w.rus_name or w.name
                 results.append(OptionChoice(
                     name=truncate(display_name),
-                    value=f"{w['id']}::{truncate(display_name, 100 - len(str(w['id'])) - 2)}"
+                    value=f"{w.id}::{truncate(display_name, 100 - len(str(w.id)) - 2)}"
                 ))
 
             return results
@@ -71,14 +71,14 @@ class Subscription(commands.Cog):
     async def get_guild_subs_auto(self, ctx: AutocompleteContext):
         """Автозаполнение подписок текущего сервера"""
         try:
-            records = await self.db.get_guild_subscriptions(ctx.interaction.guild_id)
+            subs = await self.db.get_guild_subscriptions(ctx.interaction.guild_id)
             return [
                 OptionChoice(
-                    name=truncate(f"{SUB_TYPES[r['type']].emoji}: {r['description'] or '—'}"),
-                    value=r['sub_id']
+                    name=truncate(f"{SUB_TYPES[sub.type].emoji}: {sub.description or '—'}"),
+                    value=sub.id
                 )
-                for r in records
-                if not ctx.value or ctx.value.lower() in (r['description'] or '').lower()
+                for sub in subs
+                if not ctx.value or ctx.value.lower() in (sub.description or '').lower()
             ][:25]
         except Exception:
             traceback.print_exc()
@@ -147,12 +147,12 @@ class Subscription(commands.Cog):
         try:
             work_info = await self.lib_api.search_work(site, work_id, title.removesuffix('...'))
 
-            sub_id = await self.db.get_sub_id('works', work_info['id'])
+            sub_id = await self.db.get_sub_id('works', work_info.id)
             if not sub_id:
-                newest_id_work = await self.lib_api.search_newest_id_chapter_work(site, work_info['slug_url'])
+                newest_id_work = await self.lib_api.search_newest_id_chapter_work(site, work_info.slug_url)
                 await self.db.add_work(work_info)
 
-                sub_id = await self.db.create_sub('works', work_info['id'], newest_id_work)
+                sub_id = await self.db.create_sub('works', work_info.id, newest_id_work)
                 print(f"Created new subscription with ID: {sub_id}")
 
             if not await self.db.check_sub_guild_exists(sub_id, ctx.guild.id):
@@ -215,17 +215,17 @@ class Subscription(commands.Cog):
 
         subs = []
         for r in records:
-            sub_type = f"{SUB_TYPES[r['type']].emoji} {SUB_TYPES[r['type']].name}"
-            site_icon_emoji = await self.bot.get_app_emoji(SITES[r['site_id']].emoji_name)
+            sub_type = f"{SUB_TYPES[r.type].emoji} {SUB_TYPES[r.type].name}"
+            site_icon_emoji = await self.bot.get_app_emoji(SITES[r.site_id].emoji_name)
+            url = f"{SITES.get(r.site_id).base_url}/ru/book/{r.slug_url}" if r.site_id else None
 
-            sub = {
-                'title': r['description'],
-                'url': f"{SITES.get(r['site_id'], 3).base_url}/ru/book/{r['slug_url']}",
-                'sub_type': sub_type,
-                'channel_id': r['channel_id'],
-                'site_icon': site_icon_emoji
-            }
-            subs.append(sub)
+            subs.append(SubListItem(
+                title=r.description,
+                url=url,
+                sub_type=sub_type,
+                channel_id=r.channel_id,
+                site_icon=site_icon_emoji
+            ))
 
         view = SubListView(subs, ctx.guild.name, ctx.author)
 
